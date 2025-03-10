@@ -1,0 +1,141 @@
+{% extends 'School/base.html' %}
+
+{% block title %}Forum - École en Ligne{% endblock %}
+
+{% block extra_css %}
+<style>
+    .forum-card {
+        transition: transform 0.2s;
+    }
+    
+    .forum-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .recent-messages {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .message-item {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .message-item:last-child {
+        border-bottom: none;
+    }
+    
+    .message-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Forum</h2>
+        {% if user.role in 'ADMIN,TEACHER,ACADEMIC' %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createForumModal">
+            <i class="fas fa-plus me-2"></i>Nouveau Forum
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Liste des forums -->
+        <div class="col-md-8">
+            <div class="row g-4">
+                {% for forum in forums %}
+                <div class="col-md-6">
+                    <div class="card forum-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ forum.titre }}</h5>
+                            <p class="card-text text-muted">
+                                <small>
+                                    <i class="fas fa-comments me-1"></i>
+                                    {{ forum.messages.count }} messages
+                                </small>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    Créé le {{ forum.date_creation|date:"d/m/Y" }}
+                                </small>
+                                <a href="{% url 'School:forum_detail' forum.id %}" class="btn btn-outline-primary">
+                                    Voir les discussions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        Aucun forum n'a été créé pour le moment.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Messages récents -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Messages Récents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="recent-messages">
+                        {% for message in recent_messages %}
+                        <div class="message-item">
+                            <div class="message-content">{{ message.contenu|truncatechars:100 }}</div>
+                            <div class="message-meta">
+                                <span class="me-2">
+                                    <i class="fas fa-user me-1"></i>
+                                    {{ message.expediteur.username }}
+                                </span>
+                                <span>
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ message.date_envoi|date:"d/m/Y H:i" }}
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">Aucun message récent.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.role in 'ADMIN,TEACHER,ACADEMIC' %}
+<!-- Modal Création Forum -->
+<div class="modal fade" id="createForumModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Créer un nouveau forum</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'School:forum_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre du forum</label>
+                        <input type="text" name="titre" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

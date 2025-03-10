@@ -1,6 +1,7 @@
 # Python
-*.py[cod]
 __pycache__/
+*.py[cod]
+*$py.class
 *.so
 .Python
 env/
@@ -21,11 +22,10 @@ var/
 
 # Django
 *.log
-*.pot
-*.pyc
+local_settings.py
 db.sqlite3
+db.sqlite3-journal
 media/
-staticfiles/
 
 # Virtual Environment
 venv/

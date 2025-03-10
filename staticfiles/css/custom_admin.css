@@ -1,0 +1,103 @@
+/* Personnalisation de l'interface d'administration */
+
+/* En-tête */
+#header {
+    background: #2c3e50;
+    color: white;
+}
+
+#header a:link, #header a:visited {
+    color: white;
+}
+
+/* Menu latéral */
+.module h2, .module caption, .inline-group h2 {
+    background: #34495e;
+}
+
+div.breadcrumbs {
+    background: #3498db;
+}
+
+/* Boutons */
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: #2980b9;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover {
+    background: #3498db;
+}
+
+.button.default, input[type=submit].default, .submit-row input.default {
+    background: #27ae60;
+}
+
+.button.default:hover, input[type=submit].default:hover {
+    background: #2ecc71;
+}
+
+/* Tableaux */
+thead th {
+    background: #34495e;
+    color: white;
+}
+
+/* Messages */
+.success {
+    background: #27ae60;
+}
+
+.warning {
+    background: #f39c12;
+}
+
+.errornote {
+    background: #c0392b;
+}
+
+/* Groupes de modèles */
+.app-School .model-utilisateur,
+.app-School .model-structureacademique,
+.app-School .model-filiere,
+.app-School .model-classe {
+    border-left: 5px solid #3498db;
+}
+
+.app-School .model-cours,
+.app-School .model-materiel,
+.app-School .model-quiz,
+.app-School .model-question,
+.app-School .model-resultatquiz {
+    border-left: 5px solid #27ae60;
+}
+
+.app-School .model-forum,
+.app-School .model-discussion,
+.app-School .model-message {
+    border-left: 5px solid #e67e22;
+}
+
+/* Formulaires */
+.aligned label {
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.form-row {
+    border-bottom: 1px solid #ecf0f1;
+}
+
+/* Filtres */
+.filtered .actions {
+    background: #ecf0f1;
+}
+
+/* Pagination */
+.paginator a:link, .paginator a:visited {
+    background: #3498db;
+    color: white;
+}
+
+.paginator a:hover {
+    background: #2980b9;
+} 

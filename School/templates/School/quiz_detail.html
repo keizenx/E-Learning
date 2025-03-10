@@ -1,0 +1,159 @@
+{% extends 'School/base.html' %}
+
+{% block title %}{{ quiz.titre }} - École en Ligne{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    .quiz-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .question-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .question-text {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+
+    .options-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .option-item {
+        margin: 0.5rem 0;
+    }
+
+    .option-item label {
+        display: block;
+        padding: 0.8rem 1rem;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .option-item label:hover {
+        background: #e9ecef;
+    }
+
+    .option-item input[type="radio"] {
+        margin-right: 10px;
+    }
+
+    .quiz-footer {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .submit-btn {
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+    }
+
+    .result-container {
+        text-align: center;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 2rem;
+    }
+
+    .score-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #28a745;
+        margin: 1rem 0;
+    }
+
+    .progress {
+        height: 20px;
+        margin: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <div class="quiz-header">
+        <h2>{{ quiz.titre }}</h2>
+        <p class="text-muted">{{ quiz.cours.titre }}</p>
+    </div>
+
+    {% if quiz_complete %}
+        <div class="result-container">
+            <h3>Résultats du Quiz</h3>
+            <div class="score-display">{{ score }} / {{ total_questions }}</div>
+            <div class="progress">
+                <div class="progress-bar bg-success" role="progressbar" 
+                     style="width: {{ pourcentage }}%" 
+                     aria-valuenow="{{ pourcentage }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ pourcentage }}%
+                </div>
+            </div>
+            <p class="mt-3">
+                {% if pourcentage >= 80 %}
+                    Excellent travail ! 🎉
+                {% elif pourcentage >= 60 %}
+                    Bon travail ! Continuez ainsi ! 👍
+                {% else %}
+                    Continuez à pratiquer pour vous améliorer ! 💪
+                {% endif %}
+            </p>
+            <a href="{% url 'School:cours_detail' quiz.cours.id %}" class="btn btn-primary mt-3">
+                Retour au cours
+            </a>
+        </div>
+    {% else %}
+        <form method="post">
+            {% csrf_token %}
+            {% for question in quiz.questions.all %}
+                <div class="question-card">
+                    <div class="question-text">{{ forloop.counter }}. {{ question.texte }}</div>
+                    <ul class="options-list">
+                        {% for reponse in question.reponses_list %}
+                            <li class="option-item">
+                                <label>
+                                    <input type="radio" 
+                                           name="question_{{ question.id }}" 
+                                           value="{{ reponse }}" 
+                                           required>
+                                    {{ reponse }}
+                                </label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+
+            <div class="quiz-footer">
+                <button type="submit" class="btn btn-primary submit-btn">
+                    Soumettre le Quiz
+                </button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %} 

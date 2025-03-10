@@ -1,0 +1,180 @@
+/* Admin theme customization */
+:root {
+    --primary: #06BBCC;
+    --secondary: #181d38;
+    --accent: #0599a8;
+}
+
+/* Header */
+#header {
+    background: var(--secondary);
+    color: white;
+}
+
+#branding h1 {
+    color: white;
+}
+
+.module h2, .module caption, .inline-group h2 {
+    background: var(--primary);
+    color: white;
+}
+
+/* Links */
+a:link, a:visited {
+    color: var(--primary);
+}
+
+a:hover {
+    color: var(--accent);
+}
+
+/* Buttons */
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: var(--primary);
+    color: white;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover {
+    background: var(--accent);
+}
+
+.button.default, input[type=submit].default, .submit-row input.default {
+    background: var(--primary);
+}
+
+.button.default:hover, input[type=submit].default:hover {
+    background: var(--accent);
+}
+
+/* Admin sections */
+.module {
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.module h2 {
+    padding: 15px;
+    font-size: 14px;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Dashboard */
+.dashboard .module table th {
+    width: 100%;
+}
+
+.dashboard .module table td {
+    white-space: nowrap;
+}
+
+.dashboard .module table td a {
+    display: block;
+    padding: 8px;
+}
+
+/* App groups */
+.app-list {
+    margin-top: 20px;
+    border: none;
+    background: transparent;
+}
+
+.app-list > h2 {
+    background: var(--secondary);
+    color: white;
+    padding: 15px;
+    margin: 0;
+    border-radius: 4px 4px 0 0;
+}
+
+.app-list-item {
+    padding: 15px;
+    background: white;
+    border-bottom: 1px solid #eee;
+}
+
+.app-list-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Form elements */
+.form-row {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-row:last-child {
+    border-bottom: none;
+}
+
+.form-row label {
+    font-weight: bold;
+    color: var(--secondary);
+}
+
+/* Messages */
+.messagelist {
+    margin: 0;
+    padding: 0;
+}
+
+.messagelist li {
+    padding: 15px;
+    margin: 0 0 10px 0;
+    border-radius: 4px;
+}
+
+.messagelist li.success {
+    background: #dff0d8;
+    color: #3c763d;
+}
+
+.messagelist li.error {
+    background: #f2dede;
+    color: #a94442;
+}
+
+/* Recent actions */
+.recent-actions {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+
+.recent-actions h2 {
+    background: var(--secondary);
+    color: white;
+    padding: 15px;
+    margin: 0;
+    border-radius: 4px 4px 0 0;
+}
+
+.recent-actions ul {
+    margin: 0;
+    padding: 15px;
+}
+
+.recent-actions li {
+    margin-bottom: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 767px) {
+    #header {
+        padding: 10px;
+    }
+    
+    #branding h1 {
+        font-size: 18px;
+    }
+    
+    .module {
+        margin: 0 -15px 20px -15px;
+        border-radius: 0;
+    }
+} 

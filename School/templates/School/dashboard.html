@@ -1,0 +1,222 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord - École en Ligne{% endblock %}
+
+{% block content %}
+<!-- Header Start -->
+<div class="container-fluid page-header" style="margin-bottom: 90px;">
+    <div class="container">
+        <div class="d-flex flex-column justify-content-center" style="min-height: 300px">
+            <h3 class="display-4 text-white text-uppercase">Tableau de bord</h3>
+            <div class="d-inline-flex text-white">
+                <p class="m-0 text-uppercase">Bienvenue, {{ user.nom }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Header End -->
+
+<!-- Dashboard Start -->
+<div class="container-fluid py-5">
+    <div class="container">
+        <!-- Statistics Cards -->
+        <div class="row pb-5">
+            {% if user.role == 'ADMIN' or user.role == 'ACADEMIC' %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-1.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Total Étudiants</h4>
+                        <span>{{ total_students }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-2.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Total Enseignants</h4>
+                        <span>{{ total_teachers }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-3.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Total Cours</h4>
+                        <span>{{ total_courses }}</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.role == 'TEACHER' %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-1.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Mes Cours</h4>
+                        <span>{{ teacher_courses }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-2.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Mes Étudiants</h4>
+                        <span>{{ teacher_students }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-3.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Quiz Créés</h4>
+                        <span>{{ teacher_quizzes }}</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.role == 'STUDENT' %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-1.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Cours Inscrits</h4>
+                        <span>{{ student_courses }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-2.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Quiz à Compléter</h4>
+                        <span>{{ student_pending_quizzes }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="cat-item position-relative overflow-hidden rounded mb-2">
+                    <img class="img-fluid" src="{% static 'img/cat-3.jpg' %}" alt="">
+                    <a class="cat-overlay text-white text-decoration-none" href="">
+                        <h4 class="text-white font-weight-medium">Moyenne Générale</h4>
+                        <span>{{ student_average }}%</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <!-- Recent Activities -->
+            <div class="col-lg-6">
+                <h2 class="mb-4">Activités Récentes</h2>
+                <div class="bg-light p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <img class="rounded-circle" src="{% static 'img/testimonial-1.jpg' %}" style="width: 40px; height: 40px;" alt="">
+                        <div class="pl-3">
+                            <h6>Nouveau cours disponible</h6>
+                            <small class="text-muted">Il y a 1 heure</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <img class="rounded-circle" src="{% static 'img/testimonial-2.jpg' %}" style="width: 40px; height: 40px;" alt="">
+                        <div class="pl-3">
+                            <h6>Quiz complété</h6>
+                            <small class="text-muted">Il y a 2 heures</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <img class="rounded-circle" src="{% static 'img/testimonial-3.jpg' %}" style="width: 40px; height: 40px;" alt="">
+                        <div class="pl-3">
+                            <h6>Nouveau message dans le forum</h6>
+                            <small class="text-muted">Il y a 3 heures</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Schedule -->
+            <div class="col-lg-6">
+                <h2 class="mb-4">Emploi du temps aujourd'hui</h2>
+                <div class="bg-light p-4">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                        <div>
+                            <h6 class="m-0">Mathématiques</h6>
+                            <small class="text-muted">Salle 101</small>
+                        </div>
+                        <span class="bg-primary text-white py-1 px-3">09:00 - 10:30</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                        <div>
+                            <h6 class="m-0">Physique</h6>
+                            <small class="text-muted">Salle 203</small>
+                        </div>
+                        <span class="bg-primary text-white py-1 px-3">11:00 - 12:30</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="m-0">Informatique</h6>
+                            <small class="text-muted">Salle Info 2</small>
+                        </div>
+                        <span class="bg-primary text-white py-1 px-3">14:00 - 15:30</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Dashboard End -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'img/carousel-2.jpg' %}");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.cat-item {
+    display: block;
+    transition: .5s;
+}
+
+.cat-item:hover {
+    transform: scale(1.1);
+}
+
+.cat-item img {
+    transition: .5s;
+}
+
+.cat-item:hover img {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.cat-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    transition: .5s;
+}
+
+.cat-overlay:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+</style>
+{% endblock %} 

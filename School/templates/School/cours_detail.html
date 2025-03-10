@@ -1,0 +1,230 @@
+{% extends 'School/base.html' %}
+
+{% block title %}{{ cours.titre }} - École en Ligne{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    .material-card {
+        margin-bottom: 1rem;
+    }
+    
+    .material-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+    }
+    
+    .pdf-icon { color: #e74c3c; }
+    .video-icon { color: #3498db; }
+    .doc-icon { color: #2ecc71; }
+    
+    .quiz-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="course-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="mb-3">{{ cours.titre }}</h1>
+                <p class="mb-2">
+                    <i class="fas fa-user me-2"></i>{{ cours.enseignant.nom }}
+                </p>
+            </div>
+            {% if user.role == 'TEACHER' and user == cours.enseignant or user.role == 'ADMIN' %}
+            <div class="btn-group">
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+                    <i class="fas fa-plus me-2"></i>Ajouter du matériel
+                </button>
+                <button class="btn btn-light ms-2" data-bs-toggle="modal" data-bs-target="#addQuizModal">
+                    <i class="fas fa-question-circle me-2"></i>Créer un quiz
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Matériels de cours -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Matériels du cours</h5>
+                </div>
+                <div class="card-body">
+                    {% for materiel in cours.materiels.all %}
+                    <div class="card material-card">
+                        <div class="card-body d-flex align-items-center">
+                            <i class="material-icon fas 
+                                {% if materiel.type == 'pdf' %}fa-file-pdf pdf-icon
+                                {% elif materiel.type == 'video' %}fa-video video-icon
+                                {% else %}fa-file-alt doc-icon{% endif %}">
+                            </i>
+                            <div class="flex-grow-1">
+                                <h5 class="card-title mb-1">{{ materiel.titre }}</h5>
+                                <p class="card-text text-muted mb-0">{{ materiel.contenu|truncatewords:20 }}</p>
+                            </div>
+                            <a href="{{ materiel.fichier.url }}" class="btn btn-outline-primary" target="_blank">
+                                <i class="fas fa-download me-2"></i>Télécharger
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Aucun matériel disponible pour ce cours.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quiz</h5>
+                </div>
+                <div class="card-body">
+                    <div class="quiz-list">
+                        {% for quiz in cours.quiz_set.all %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ quiz.titre }}</h6>
+                                <p class="card-text small text-muted">
+                                    {{ quiz.questions.count }} questions
+                                </p>
+                                <a href="{% url 'School:quiz_detail' quiz.id %}" class="btn btn-sm btn-outline-primary">
+                                    Commencer le quiz
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">Aucun quiz disponible pour ce cours.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.role == 'TEACHER' and user == cours.enseignant or user.role == 'ADMIN' %}
+<!-- Modal Ajout Matériel -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter du matériel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'School:materiel_create' cours.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre</label>
+                        <input type="text" name="titre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="contenu" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="type" class="form-select" required>
+                            <option value="pdf">PDF</option>
+                            <option value="video">Vidéo</option>
+                            <option value="document">Document</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fichier</label>
+                        <input type="file" name="fichier" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajout Quiz -->
+<div class="modal fade" id="addQuizModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Créer un quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'School:quiz_create' cours.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre du quiz</label>
+                        <input type="text" name="titre" class="form-control" required>
+                    </div>
+                    <div id="questions-container">
+                        <div class="question-item mb-4">
+                            <h6>Question 1</h6>
+                            <div class="mb-2">
+                                <input type="text" name="questions[]" class="form-control" placeholder="Question" required>
+                            </div>
+                            <div class="mb-2">
+                                <input type="text" name="reponses[]" class="form-control" placeholder="Réponses (séparées par des virgules)" required>
+                            </div>
+                            <div class="mb-2">
+                                <input type="text" name="reponse_correcte[]" class="form-control" placeholder="Réponse correcte" required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuestion()">
+                        <i class="fas fa-plus me-2"></i>Ajouter une question
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer le quiz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block extra_js %}
+<script>
+let questionCount = 1;
+
+function addQuestion() {
+    questionCount++;
+    const container = document.getElementById('questions-container');
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'question-item mb-4';
+    questionDiv.innerHTML = `
+        <h6>Question ${questionCount}</h6>
+        <div class="mb-2">
+            <input type="text" name="questions[]" class="form-control" placeholder="Question" required>
+        </div>
+        <div class="mb-2">
+            <input type="text" name="reponses[]" class="form-control" placeholder="Réponses (séparées par des virgules)" required>
+        </div>
+        <div class="mb-2">
+            <input type="text" name="reponse_correcte[]" class="form-control" placeholder="Réponse correcte" required>
+        </div>
+    `;
+    container.appendChild(questionDiv);
+}
+</script>
+{% endblock %}
+{% endblock %} 

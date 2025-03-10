@@ -1,0 +1,149 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Cours - École en Ligne{% endblock %}
+
+{% block content %}
+<!-- Header Start -->
+<div class="container-fluid page-header" style="margin-bottom: 90px;">
+    <div class="container">
+        <div class="d-flex flex-column justify-content-center" style="min-height: 300px">
+            <h3 class="display-4 text-white text-uppercase">Cours</h3>
+            <div class="d-inline-flex text-white">
+                <p class="m-0 text-uppercase"><a class="text-white" href="{% url 'School:dashboard' %}">Tableau de bord</a></p>
+                <i class="fa fa-angle-double-right pt-1 px-3"></i>
+                <p class="m-0 text-uppercase">Cours</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Header End -->
+
+<!-- Courses Start -->
+<div class="container-fluid py-5">
+    <div class="container">
+        {% if user.role == 'ADMIN' or user.role == 'TEACHER' %}
+        <div class="text-right mb-5">
+            <button class="btn btn-primary py-2 px-4" data-toggle="modal" data-target="#addCourseModal">
+                <i class="fa fa-plus mr-2"></i>Ajouter un cours
+            </button>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            {% for cours in cours_list %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="rounded overflow-hidden mb-2">
+                    <img class="img-fluid" src="{% static 'img/course-1.jpg' %}" alt="">
+                    <div class="bg-secondary p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <small class="m-0"><i class="fa fa-users text-primary mr-2"></i>{{ cours.etudiants.count }} Étudiants</small>
+                            <small class="m-0"><i class="far fa-clock text-primary mr-2"></i>{{ cours.date_creation|date:"d/m/Y" }}</small>
+                        </div>
+                        <a class="h5" href="{% url 'School:cours_detail' cours.id %}">{{ cours.titre }}</a>
+                        <div class="border-top mt-4 pt-4">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="m-0"><i class="fa fa-user text-primary mr-2"></i>{{ cours.enseignant.nom }}</h6>
+                                {% if cours.is_active %}
+                                <span class="badge badge-success">Actif</span>
+                                {% else %}
+                                <span class="badge badge-secondary">Brouillon</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <h3>Aucun cours disponible</h3>
+                    {% if user.role == 'ADMIN' or user.role == 'TEACHER' %}
+                    <p>Commencez par créer un nouveau cours</p>
+                    {% else %}
+                    <p>Aucun cours n'est disponible pour le moment</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<!-- Courses End -->
+
+<!-- Add Course Modal -->
+{% if user.role == 'ADMIN' or user.role == 'TEACHER' %}
+<div class="modal fade" id="addCourseModal" tabindex="-1" role="dialog" aria-labelledby="addCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCourseModalLabel">Ajouter un nouveau cours</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'School:cours_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="titre">Titre du cours</label>
+                        <input type="text" class="form-control" id="titre" name="titre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                        <label class="form-check-label" for="is_active">Publier immédiatement</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer le cours</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'img/carousel-2.jpg' %}");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.modal-header {
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.form-control {
+    border-radius: 0.25rem;
+}
+</style>
+{% endblock %} 

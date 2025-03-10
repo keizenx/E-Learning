@@ -1,0 +1,161 @@
+{% extends 'School/base.html' %}
+
+{% block title %}{{ forum.titre }} - Forum{% endblock %}
+
+{% block extra_css %}
+<style>
+    .message-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .message-card {
+        margin-bottom: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .message-header {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .message-content {
+        padding: 1.5rem;
+        white-space: pre-wrap;
+    }
+
+    .message-footer {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        border-top: 1px solid #eee;
+    }
+
+    .reply-form {
+        display: none;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .message-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ forum.titre }}</h2>
+            <p class="text-muted mb-0">
+                <i class="fas fa-calendar me-2"></i>Créé le {{ forum.date_creation|date:"d/m/Y" }}
+            </p>
+        </div>
+        <a href="{% url 'School:forum_list' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Retour aux forums
+        </a>
+    </div>
+
+    <div class="message-container">
+        <!-- Formulaire nouveau message -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Votre message</label>
+                        <textarea name="contenu" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Envoyer
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Liste des messages -->
+        {% for message in messages %}
+        <div class="message-card">
+            <div class="message-header d-flex align-items-center">
+                <div class="user-avatar me-3">
+                    {{ message.expediteur.username|make_list|first|upper }}
+                </div>
+                <div>
+                    <h6 class="mb-0">{{ message.expediteur.username }}</h6>
+                    <div class="message-meta">
+                        {{ message.date_envoi|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+            </div>
+            <div class="message-content">
+                {{ message.contenu }}
+            </div>
+            <div class="message-footer">
+                <button class="btn btn-sm btn-outline-primary reply-btn" 
+                        onclick="toggleReplyForm('reply-form-{{ message.id }}')">
+                    <i class="fas fa-reply me-2"></i>Répondre
+                </button>
+                
+                <!-- Formulaire de réponse -->
+                <div id="reply-form-{{ message.id }}" class="reply-form">
+                    <form method="post" action="{% url 'School:message_reply' forum.id message.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <textarea name="contenu" class="form-control" rows="2" required
+                                    placeholder="Votre réponse..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-sm btn-secondary me-2"
+                                    onclick="toggleReplyForm('reply-form-{{ message.id }}')">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                Envoyer la réponse
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">
+            Aucun message dans ce forum. Soyez le premier à poster !
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleReplyForm(formId) {
+    const form = document.getElementById(formId);
+    if (form.style.display === 'none' || !form.style.display) {
+        form.style.display = 'block';
+    } else {
+        form.style.display = 'none';
+    }
+}
+</script>
+{% endblock %} 
