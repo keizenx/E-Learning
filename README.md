@@ -68,6 +68,51 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+## 👥 Comment Collaborer
+
+1. Fork le projet sur GitHub
+2. Cloner votre fork
+```bash
+git clone https://github.com/VOTRE-USERNAME/E-Learning.git
+```
+
+3. Ajouter le dépôt original comme remote
+```bash
+git remote add upstream https://github.com/keizenx/E-Learning.git
+```
+
+4. Créer une branche pour vos modifications
+```bash
+git checkout -b feature/ma-nouvelle-fonctionnalite
+```
+
+5. Faire vos modifications et commits
+```bash
+git add .
+git commit -m "Description de vos modifications"
+```
+
+6. Pousser vers votre fork
+```bash
+git push origin feature/ma-nouvelle-fonctionnalite
+```
+
+7. Créer une Pull Request sur GitHub
+
+### 🔄 Maintenir votre fork à jour
+```bash
+git fetch upstream
+git checkout main
+git merge upstream/main
+git push origin main
+```
+
+### 🌿 Branches Principales
+- `main` : Code de production stable
+- `develop` : Branche de développement principal
+- `feature/*` : Branches pour les nouvelles fonctionnalités
+- `bugfix/*` : Branches pour les corrections de bugs
+
 ## 📁 Structure du Projet
 
 ```
