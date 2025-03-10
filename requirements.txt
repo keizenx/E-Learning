@@ -1,5 +1,32 @@
+# Framework principal
 Django==5.1.7
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
-Pillow==10.2.0
-python-dotenv==1.0.1 
+djangorestframework==3.15.2
+
+# Interface d'administration
+django-jazzmin==3.0.1
+
+# Gestion des images et fichiers
+Pillow==11.1.0
+
+# Sécurité et CORS
+django-cors-headers==4.7.0
+
+# Éditeur de texte riche
+django-ckeditor==6.7.2
+
+# Authentification et autorisation
+django-allauth==0.61.1
+
+# Gestion des formulaires
+django-crispy-forms==2.1
+
+# Pour les dates et l'internationalisation
+pytz==2024.1
+tzdata==2025.1
+
+# Dépendances Django
+asgiref==3.8.1
+sqlparse==0.5.3
+
+# Pour l'environnement virtuel
+python-dotenv==1.0.1
