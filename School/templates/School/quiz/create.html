@@ -1,0 +1,245 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Créer un quiz - {{ cours.titre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-item {
+        border: 1px solid #ddd;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.25rem;
+    }
+    
+    .remove-question {
+        float: right;
+    }
+
+    .invalid-feedback {
+        display: none;
+        color: #dc3545;
+        font-size: 0.875em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Créer un quiz pour {{ cours.titre }}</h2>
+            <form method="post" action="{% url 'School:quiz_create' cours.id %}" id="quizForm">
+                {% csrf_token %}
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Informations générales</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Titre du quiz</label>
+                            <input type="text" name="titre" class="form-control" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Date limite</label>
+                                    <input type="datetime-local" name="date_limite" class="form-control" required id="dateLimite">
+                                    <div class="invalid-feedback">
+                                        Veuillez sélectionner une date limite valide
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Durée (minutes)</label>
+                                    <input type="number" name="duree" class="form-control" value="30" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Questions</h5>
+                        <div id="questions-container">
+                            <div class="question-item">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-question" style="display: none;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Question 1</label>
+                                    <input type="text" name="questions[]" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Type de question</label>
+                                    <select name="type[]" class="form-select question-type" required>
+                                        <option value="QCM">Choix multiple</option>
+                                        <option value="LIBRE">Réponse libre</option>
+                                        <option value="VF">Vrai/Faux</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3 reponses-container">
+                                    <label class="form-label">Réponses (séparées par des points-virgules)</label>
+                                    <input type="text" name="reponses[]" class="form-control" placeholder="Option 1;Option 2;Option 3" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Réponse correcte</label>
+                                    <input type="text" name="reponse_correcte[]" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Points</label>
+                                    <input type="number" name="points[]" class="form-control" value="1" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="add-question">
+                            <i class="fas fa-plus"></i> Ajouter une question
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'School:cours_detail' cours.id %}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">Créer le quiz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Définir la date limite par défaut (7 jours à partir d'aujourd'hui)
+    const dateLimiteInput = document.getElementById('dateLimite');
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 7);
+    
+    // Formater la date pour l'input datetime-local
+    const year = defaultDate.getFullYear();
+    const month = String(defaultDate.getMonth() + 1).padStart(2, '0');
+    const day = String(defaultDate.getDate()).padStart(2, '0');
+    const hours = String(defaultDate.getHours()).padStart(2, '0');
+    const minutes = String(defaultDate.getMinutes()).padStart(2, '0');
+    
+    dateLimiteInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    // Validation du formulaire
+    const quizForm = document.getElementById('quizForm');
+    quizForm.addEventListener('submit', function(event) {
+        const dateLimite = new Date(dateLimiteInput.value);
+        const now = new Date();
+        
+        if (dateLimite <= now) {
+            event.preventDefault();
+            dateLimiteInput.classList.add('is-invalid');
+            dateLimiteInput.nextElementSibling.style.display = 'block';
+        } else {
+            dateLimiteInput.classList.remove('is-invalid');
+            dateLimiteInput.nextElementSibling.style.display = 'none';
+        }
+    });
+
+    const addQuestionBtn = document.getElementById('add-question');
+    const questionsContainer = document.getElementById('questions-container');
+    let questionCount = 1;
+
+    // Fonction pour mettre à jour le champ des réponses en fonction du type
+    function updateReponsesField(select, container) {
+        const reponsesInput = container.querySelector('input[name="reponses[]"]');
+        const reponsesLabel = container.querySelector('label');
+        
+        if (select.value === 'VF') {
+            reponsesInput.value = 'Vrai;Faux';
+            reponsesInput.readOnly = true;
+            reponsesInput.placeholder = 'Vrai;Faux';
+        } else if (select.value === 'LIBRE') {
+            reponsesInput.value = '';
+            reponsesInput.readOnly = true;
+            reponsesInput.placeholder = 'Pas de réponses prédéfinies pour une question libre';
+        } else {
+            reponsesInput.readOnly = false;
+            reponsesInput.placeholder = 'Option 1;Option 2;Option 3';
+        }
+    }
+
+    // Ajouter l'événement de changement de type pour la première question
+    const firstTypeSelect = document.querySelector('.question-type');
+    if (firstTypeSelect) {
+        const firstReponsesContainer = firstTypeSelect.closest('.question-item').querySelector('.reponses-container');
+        firstTypeSelect.addEventListener('change', function() {
+            updateReponsesField(this, firstReponsesContainer);
+        });
+    }
+
+    addQuestionBtn.addEventListener('click', function() {
+        questionCount++;
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-item';
+        questionDiv.innerHTML = `
+            <button type="button" class="btn btn-outline-danger btn-sm remove-question">
+                <i class="fas fa-trash"></i>
+            </button>
+            
+            <div class="mb-3">
+                <label class="form-label">Question ${questionCount}</label>
+                <input type="text" name="questions[]" class="form-control" required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Type de question</label>
+                <select name="type[]" class="form-select question-type" required>
+                    <option value="QCM">Choix multiple</option>
+                    <option value="LIBRE">Réponse libre</option>
+                    <option value="VF">Vrai/Faux</option>
+                </select>
+            </div>
+            
+            <div class="mb-3 reponses-container">
+                <label class="form-label">Réponses (séparées par des points-virgules)</label>
+                <input type="text" name="reponses[]" class="form-control" placeholder="Option 1;Option 2;Option 3" required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Réponse correcte</label>
+                <input type="text" name="reponse_correcte[]" class="form-control" required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Points</label>
+                <input type="number" name="points[]" class="form-control" value="1" min="1" required>
+            </div>
+        `;
+        questionsContainer.appendChild(questionDiv);
+
+        // Ajouter l'événement de suppression
+        const removeBtn = questionDiv.querySelector('.remove-question');
+        removeBtn.addEventListener('click', function() {
+            questionDiv.remove();
+        });
+
+        // Ajouter l'événement de changement de type
+        const typeSelect = questionDiv.querySelector('.question-type');
+        const reponsesContainer = questionDiv.querySelector('.reponses-container');
+        typeSelect.addEventListener('change', function() {
+            updateReponsesField(this, reponsesContainer);
+        });
+    });
+});
+</script>
+{% endblock %} 

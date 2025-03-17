@@ -86,9 +86,13 @@
                         </div>
                         <p class="mb-1">{{ message.contenu|truncatechars:100 }}</p>
                         <small>
-                            <a href="{% url 'School:forum_detail' message.forum.id %}" class="text-decoration-none">
-                                Dans {{ message.forum.titre }}
+                            {% with forum=message.forum.first %}
+                            {% if forum %}
+                            <a href="{% url 'School:forum_detail' forum.id %}" class="text-decoration-none">
+                                Dans {{ forum.titre }}
                             </a>
+                            {% endif %}
+                            {% endwith %}
                         </small>
                     </div>
                     {% empty %}

@@ -390,6 +390,17 @@ class CoursCreateView(CreateView):
 
 @method_decorator(login_required, name='dispatch')
 class MaterielCreateView(View):
+    template_name = 'School/materiel/create.html'
+
+    def get(self, request, cours_id):
+        cours = get_object_or_404(Cours, id=cours_id)
+        
+        if request.user != cours.enseignant and request.user.role != 'ADMIN':
+            messages.error(request, "Vous n'avez pas la permission d'ajouter du matériel à ce cours.")
+            return redirect('School:cours_detail', pk=cours_id)
+            
+        return render(request, self.template_name, {'cours': cours})
+
     def post(self, request, cours_id):
         cours = get_object_or_404(Cours, id=cours_id)
         
@@ -397,23 +408,39 @@ class MaterielCreateView(View):
             messages.error(request, "Vous n'avez pas la permission d'ajouter du matériel à ce cours.")
             return redirect('School:cours_detail', pk=cours_id)
 
-        materiel = Materiel.objects.create(
-            titre=request.POST.get('titre'),
-            description=request.POST.get('description', ''),
-            cours_principal=cours,
-            type=request.POST.get('type'),
-            contenu=request.POST.get('contenu', '')
-        )
+        try:
+            materiel = Materiel(
+                titre=request.POST.get('titre'),
+                description=request.POST.get('description', ''),
+                cours_principal=cours,
+                type=request.POST.get('type'),
+                contenu=request.POST.get('contenu', '')
+            )
 
-        if 'fichier' in request.FILES:
-            materiel.fichier = request.FILES['fichier']
+            if request.FILES.get('fichier'):
+                materiel.fichier = request.FILES['fichier']
+            
             materiel.save()
-
-        messages.success(request, 'Matériel ajouté avec succès!')
-        return redirect('School:cours_detail', pk=cours_id)
+            messages.success(request, 'Matériel ajouté avec succès!')
+            return redirect('School:cours_detail', pk=cours_id)
+            
+        except Exception as e:
+            messages.error(request, f"Erreur lors de l'ajout du matériel: {str(e)}")
+            return render(request, self.template_name, {'cours': cours})
 
 @method_decorator(login_required, name='dispatch')
 class QuizCreateView(View):
+    template_name = 'School/quiz/create.html'
+
+    def get(self, request, cours_id):
+        cours = get_object_or_404(Cours, id=cours_id)
+        
+        if request.user != cours.enseignant and request.user.role != 'ADMIN':
+            messages.error(request, "Vous n'avez pas la permission de créer un quiz pour ce cours.")
+            return redirect('School:cours_detail', pk=cours_id)
+            
+        return render(request, self.template_name, {'cours': cours})
+
     def post(self, request, cours_id):
         cours = get_object_or_404(Cours, id=cours_id)
         
@@ -457,12 +484,21 @@ class QuizDetailView(DetailView):
     template_name = 'School/quiz_detail.html'
     context_object_name = 'quiz'
 
-    def post(self, request, *args, **kwargs):
-        quiz = self.get_object()
-        score = 0
-        total_questions = quiz.questions.count()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if hasattr(self, 'score'):
+            context['score'] = self.score
+            context['total_questions'] = self.total_questions
+            context['pourcentage'] = self.pourcentage
+            context['quiz_complete'] = True
+        return context
 
-        for question in quiz.questions.all():
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        score = 0
+        total_questions = self.object.questions.count()
+
+        for question in self.object.questions.all():
             reponse_utilisateur = request.POST.get(f'question_{question.id}')
             if reponse_utilisateur == question.reponse_correcte:
                 score += 1
@@ -471,18 +507,17 @@ class QuizDetailView(DetailView):
         
         # Créer ou mettre à jour le résultat
         ResultatQuiz.objects.update_or_create(
-            quiz=quiz,
+            quiz=self.object,
             etudiant=request.user,
             defaults={'score': pourcentage}
         )
         
-        context = self.get_context_data(object=quiz)
-        context['score'] = score
-        context['total_questions'] = total_questions
-        context['pourcentage'] = pourcentage
-        context['quiz_complete'] = True
+        # Stocker les résultats pour le contexte
+        self.score = score
+        self.total_questions = total_questions
+        self.pourcentage = pourcentage
         
-        return render(request, self.template_name, context)
+        return self.render_to_response(self.get_context_data())
 
 @method_decorator(login_required, name='dispatch')
 class ForumListView(ListView):
@@ -493,7 +528,8 @@ class ForumListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['recent_messages'] = Message.objects.all().order_by('-date_envoi')[:5]
+        # Récupérer les messages récents avec leurs forums associés
+        context['recent_messages'] = Message.objects.filter(forum__isnull=False).prefetch_related('forum').select_related('expediteur').order_by('-date_envoi')[:5]
         return context
 
 @method_decorator(login_required, name='dispatch')

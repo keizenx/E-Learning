@@ -119,15 +119,15 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Matériels du cours</h5>
-                    {% if user == cours.enseignant or user.role == 'ADMIN' %}
-                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addMaterialModal">
+                    {% if request.user == cours.enseignant or request.user.role == 'ADMIN' %}
+                    <a href="{% url 'School:materiel_create' cours.id %}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Ajouter du matériel
-                    </button>
+                    </a>
                     {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        {% for materiel in cours.materiels.all %}
+                        {% for materiel in cours.materiels_cours.all %}
                         <div class="col-md-6 mb-3">
                             <div class="card material-card">
                                 <div class="card-body">
@@ -148,7 +148,7 @@
                                     </div>
                                     {% endif %}
                                     {% if materiel.fichier %}
-                                    <a href="{{ materiel.fichier.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <a href="{{ materiel.fichier.url }}" class="btn btn-primary btn-sm" target="_blank">
                                         <i class="fas fa-download"></i> Télécharger
                                     </a>
                                     {% endif %}
@@ -167,7 +167,7 @@
                         </div>
                         {% empty %}
                         <div class="col-12">
-                            <p class="text-muted">Aucun matériel n'a encore été ajouté à ce cours.</p>
+                            <p class="text-muted text-center">Aucun matériel n'a encore été ajouté à ce cours.</p>
                         </div>
                         {% endfor %}
                     </div>
@@ -182,9 +182,9 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Quiz</h5>
                     {% if user == cours.enseignant or user.role == 'ADMIN' %}
-                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addQuizModal">
+                    <a href="{% url 'School:quiz_create' cours.id %}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Créer un quiz
-                    </button>
+                    </a>
                     {% endif %}
                 </div>
                 <div class="card-body">

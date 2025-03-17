@@ -1,0 +1,90 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Ajouter du matériel - {{ cours.titre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Ajouter du matériel au cours "{{ cours.titre }}"</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'School:materiel_create' cours.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="titre" class="form-label">Titre</label>
+                            <input type="text" name="titre" id="titre" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="3" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Type</label>
+                            <select name="type" id="type" class="form-select" required>
+                                <option value="PDF">Document PDF</option>
+                                <option value="VIDEO">Vidéo</option>
+                                <option value="AUTRE">Autre</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="fileUploadDiv">
+                            <label for="fichier" class="form-label">Fichier</label>
+                            <input type="file" name="fichier" id="fichier" class="form-control">
+                            <small class="text-muted">Formats acceptés: PDF, DOC, DOCX, etc.</small>
+                        </div>
+
+                        <div class="mb-3" id="videoUrlDiv" style="display: none;">
+                            <label for="contenu" class="form-label">URL de la vidéo</label>
+                            <input type="url" name="contenu" id="contenu" class="form-control" placeholder="https://www.youtube.com/embed/...">
+                            <small class="text-muted">Pour les vidéos YouTube, utilisez le lien d'intégration (clic droit sur la vidéo > Copier le code d'intégration)</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'School:cours_detail' cours.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour au cours
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Ajouter le matériel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('type');
+    const fileUploadDiv = document.getElementById('fileUploadDiv');
+    const videoUrlDiv = document.getElementById('videoUrlDiv');
+    const fichierInput = document.getElementById('fichier');
+    const contenuInput = document.getElementById('contenu');
+
+    typeSelect.addEventListener('change', function() {
+        if (this.value === 'VIDEO') {
+            fileUploadDiv.style.display = 'none';
+            videoUrlDiv.style.display = 'block';
+            fichierInput.required = false;
+            contenuInput.required = true;
+        } else {
+            fileUploadDiv.style.display = 'block';
+            videoUrlDiv.style.display = 'none';
+            fichierInput.required = true;
+            contenuInput.required = false;
+        }
+    });
+});
+</script>
+{% endblock %} 
