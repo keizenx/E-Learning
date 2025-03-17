@@ -31,17 +31,33 @@
                             {% csrf_token %}
                             {% if form.errors %}
                             <div class="alert alert-danger">
-                                Nom d'utilisateur ou mot de passe incorrect.
+                                <i class="fa fa-exclamation-circle mr-2"></i>Nom d'utilisateur ou mot de passe incorrect.
                             </div>
                             {% endif %}
-                            <div class="form-group">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-0"><i class="fa fa-user"></i></span>
+                                </div>
                                 <input type="text" class="form-control border-0 p-4" name="username" placeholder="Nom d'utilisateur" required>
                             </div>
-                            <div class="form-group">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-0"><i class="fa fa-lock"></i></span>
+                                </div>
                                 <input type="password" class="form-control border-0 p-4" name="password" placeholder="Mot de passe" required>
+                            </div>
+                            <div class="form-group form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me">
+                                <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
+                            </div>
+                            <div class="text-right mb-3">
+                                <a href="{% url 'password_reset' %}" class="text-primary">Mot de passe oublié ?</a>
                             </div>
                             <div class="form-group">
                                 <button class="btn btn-primary btn-block border-0 py-3" type="submit">Se connecter</button>
+                            </div>
+                            <div class="text-center mt-4">
+                                <p>Pas encore de compte ? <a href="{% url 'register' %}" class="text-primary">S'inscrire</a></p>
                             </div>
                         </form>
                     </div>
@@ -73,5 +89,31 @@
 .rounded-lg {
     border-radius: 1rem !important;
 }
+
+.input-group-text {
+    border-right: none;
+}
+
+.form-control {
+    border-left: none;
+}
+
+.btn-primary {
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.text-primary {
+    transition: all 0.2s ease;
+}
+
+.text-primary:hover {
+    text-decoration: none;
+    opacity: 0.8;
+}
 </style>
-{% endblock %} 
+{% endblock %}login.
