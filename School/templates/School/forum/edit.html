@@ -1,0 +1,63 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Modifier le forum {{ forum.titre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Modifier le forum</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_titre" class="form-label">Titre</label>
+                            {{ form.titre.errors }}
+                            <input type="text" name="titre" id="id_titre" class="form-control" value="{{ forum.titre }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            {{ form.description.errors }}
+                            <textarea name="description" id="id_description" class="form-control" rows="4" required>{{ forum.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_cours" class="form-label">Cours associé</label>
+                            {{ form.cours.errors }}
+                            <select name="cours" id="id_cours" class="form-select">
+                                <option value="">Sélectionnez un cours (optionnel)</option>
+                                {% for cours in form.cours.field.queryset %}
+                                <option value="{{ cours.id }}" {% if cours == forum.cours %}selected{% endif %}>
+                                    {{ cours.titre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Vous pouvez associer ce forum à un cours spécifique</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                            <a href="{% url 'School:forum_detail' forum.id %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/27.1.0/classic/ckeditor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    ClassicEditor
+        .create(document.querySelector('#id_description'))
+        .catch(error => {
+            console.error(error);
+        });
+});
+</script>
+{% endblock %} 

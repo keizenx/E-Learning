@@ -1,0 +1,27 @@
+Bonjour {{ user.nom }},
+
+Nous avons le plaisir de vous informer que votre compte {{ role }} sur École en Ligne a été approuvé par l'administration.
+
+Vous pouvez maintenant vous connecter à votre compte en utilisant le lien suivant :
+{{ login_url }}
+
+{% if user.role == 'TEACHER' %}
+Une fois connecté, vous aurez accès à toutes les fonctionnalités de la plateforme, notamment :
+- La création et la gestion de cours
+- La création de quiz et d'évaluations
+- L'interaction avec les étudiants via le forum
+- Le suivi des progrès des étudiants
+{% endif %}
+
+{% if user.role == 'ACADEMIC' %}
+Une fois connecté, vous aurez accès à toutes les fonctionnalités de la plateforme, notamment :
+- La gestion des inscriptions des étudiants
+- La supervision des cours et des enseignants
+- Le suivi des résultats académiques
+- La gestion des emplois du temps
+{% endif %}
+
+Si vous rencontrez des difficultés pour vous connecter, n'hésitez pas à nous contacter.
+
+Cordialement,
+L'équipe École en Ligne 

@@ -1,0 +1,151 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
+<style>
+    .login {
+        background: #f8f9fa;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #login-form {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        max-width: 400px;
+        width: 100%;
+    }
+
+    .role-selector {
+        margin-bottom: 1rem;
+    }
+
+    .role-selector label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #666;
+        font-weight: bold;
+    }
+
+    .role-selector select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        margin-bottom: 1rem;
+    }
+
+    .submit-row {
+        padding: 0 !important;
+        margin: 1rem 0 0 0;
+        text-align: right;
+    }
+
+    .submit-row input {
+        width: 100%;
+        padding: 10px;
+        background: #417690;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .submit-row input:hover {
+        background: #205067;
+    }
+
+    .errornote {
+        background: #fff2f2;
+        border: 1px solid #e35b5b;
+        border-radius: 4px;
+        color: #e35b5b;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    form .form-row {
+        padding: 4px 0;
+        float: left;
+        width: 100%;
+        border: none;
+    }
+
+    .login .form-row label {
+        display: block;
+        line-height: 2em;
+        color: #666;
+        font-weight: bold;
+    }
+
+    .login .form-row #id_username, .login .form-row #id_password {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    {% if form.errors and not form.non_field_errors %}
+        <p class="errornote">
+        {% blocktranslate count counter=form.errors.items|length %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktranslate %}
+        </p>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+            <p class="errornote">{{ error }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if user.is_authenticated %}
+        <p class="errornote">
+        {% blocktranslate trimmed %}
+            You are authenticated as {{ username }}, but are not authorized to
+            access this page. Would you like to login to a different account?
+        {% endblocktranslate %}
+        </p>
+    {% endif %}
+
+    <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+        <div class="form-row role-selector">
+            <label for="id_role">{% translate 'Role' %}</label>
+            <select name="role" id="id_role" required>
+                <option value="">{% translate 'Select your role' %}</option>
+                <option value="ADMIN">{% translate 'Administrator' %}</option>
+                <option value="ACADEMIC">{% translate 'Academic Manager' %}</option>
+                <option value="TEACHER">{% translate 'Teacher' %}</option>
+                <option value="STUDENT">{% translate 'Student' %}</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            {{ form.username.errors }}
+            {{ form.username.label_tag }}
+            {{ form.username }}
+        </div>
+
+        <div class="form-row">
+            {{ form.password.errors }}
+            {{ form.password.label_tag }}
+            {{ form.password }}
+            <input type="hidden" name="next" value="{{ next }}">
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" value="{% translate 'Log in' %}">
+        </div>
+    </form>
+</div>
+{% endblock %} 

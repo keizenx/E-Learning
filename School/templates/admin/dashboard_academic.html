@@ -1,0 +1,50 @@
+{% extends "admin/base_dashboard.html" %}
+
+{% block dashboard_title %}Tableau de bord - Responsable Académique{% endblock %}
+
+{% block dashboard_stats %}
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <h3>Total Étudiants</h3>
+        <div class="stat-value">{{ total_students }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Total Enseignants</h3>
+        <div class="stat-value">{{ total_teachers }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Total Cours</h3>
+        <div class="stat-value">{{ total_courses }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-content">
+    <div class="content-card">
+        <h3>Accès Rapide</h3>
+        <div class="list-item">
+            <a href="{% url 'admin:School_utilisateur_changelist' %}?role=STUDENT">Gérer les étudiants</a>
+        </div>
+        <div class="list-item">
+            <a href="{% url 'admin:School_utilisateur_changelist' %}?role=TEACHER">Gérer les enseignants</a>
+        </div>
+        <div class="list-item">
+            <a href="{% url 'admin:School_classe_changelist' %}">Gérer les classes</a>
+        </div>
+        <div class="list-item">
+            <a href="{% url 'admin:School_filiere_changelist' %}">Gérer les filières</a>
+        </div>
+    </div>
+    
+    <div class="content-card">
+        <h3>Emploi du temps</h3>
+        <div class="list-item">
+            <a href="{% url 'admin:School_emploidutemps_changelist' %}">Voir l'emploi du temps</a>
+        </div>
+        <div class="list-item">
+            <a href="{% url 'admin:School_emploidutemps_add' %}">Ajouter un créneau</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

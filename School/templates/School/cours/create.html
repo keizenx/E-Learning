@@ -1,0 +1,88 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Créer un nouveau cours - École en Ligne{% endblock %}
+
+{% block content %}
+<!-- Header Start -->
+<div class="container-fluid page-header" style="margin-bottom: 90px;">
+    <div class="container">
+        <div class="d-flex flex-column justify-content-center" style="min-height: 300px">
+            <h3 class="display-4 text-white text-uppercase">Créer un nouveau cours</h3>
+            <div class="d-inline-flex text-white">
+                <p class="m-0 text-uppercase"><a class="text-white" href="{% url 'School:cours_list' %}">Cours</a></p>
+                <i class="fa fa-angle-double-right pt-1 px-3"></i>
+                <p class="m-0 text-uppercase">Nouveau cours</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Header End -->
+
+<!-- Create Course Start -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="titre">Titre du cours</label>
+                            <input type="text" class="form-control" id="titre" name="titre" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="classe">Classe</label>
+                            <select class="form-control" id="classe" name="classe" required>
+                                <option value="">Sélectionnez une classe</option>
+                                {% for classe in classes %}
+                                    <option value="{{ classe.id }}">{{ classe.nom }} - Niveau {{ classe.niveau }} {% if classe.filiere %}({{ classe.filiere.nom }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="image">Image du cours</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            <small class="text-muted">Format recommandé : JPG, PNG (max 5MB)</small>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="video_url">URL de la vidéo de présentation (optionnel)</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url" placeholder="https://www.youtube.com/embed/...">
+                            <small class="text-muted">Utilisez le lien d'intégration YouTube (embed)</small>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">Publier immédiatement</label>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Créer le cours</button>
+                            <a href="{% url 'School:cours_list' %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Create Course End -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'img/carousel-2.jpg' %}");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %} 

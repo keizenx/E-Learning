@@ -1,0 +1,63 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Modifier le cours {{ cours.titre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Modifier le cours</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_titre" class="form-label">Titre du cours</label>
+                            {{ form.titre.errors }}
+                            <input type="text" name="titre" id="id_titre" class="form-control" value="{{ cours.titre }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            {{ form.description.errors }}
+                            <textarea name="description" id="id_description" class="form-control" rows="5" required>{{ cours.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_classe" class="form-label">Classe</label>
+                            {{ form.classe.errors }}
+                            <select name="classe" id="id_classe" class="form-select">
+                                <option value="">Sélectionnez une classe</option>
+                                {% for classe in form.classe.field.queryset %}
+                                <option value="{{ classe.id }}" {% if classe == cours.classe %}selected{% endif %}>
+                                    {{ classe }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Sélectionnez la classe à laquelle ce cours est destiné</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                            <a href="{% url 'School:cours_detail' cours.id %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/27.1.0/classic/ckeditor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    ClassicEditor
+        .create(document.querySelector('#id_description'))
+        .catch(error => {
+            console.error(error);
+        });
+});
+</script>
+{% endblock %} 

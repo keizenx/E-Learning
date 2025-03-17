@@ -1,0 +1,85 @@
+{% extends "admin/base_dashboard.html" %}
+
+{% block dashboard_title %}Tableau de bord - Étudiant{% endblock %}
+
+{% block dashboard_stats %}
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <h3>Mes Cours</h3>
+        <div class="stat-value">{{ my_courses.count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Évaluations Passées</h3>
+        <div class="stat-value">{{ my_results.count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Moyenne Générale</h3>
+        <div class="stat-value">
+            {% if my_results %}
+                {% with total_score=0 %}
+                    {% for result in my_results %}
+                        {% with total_score=total_score|add:result.score %}{% endwith %}
+                    {% endfor %}
+                    {{ total_score|divisibleby:my_results.count|floatformat:2 }}/20
+                {% endwith %}
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-content">
+    <div class="content-card">
+        <h3>Mes Cours</h3>
+        {% if my_courses %}
+            {% for course in my_courses %}
+            <div class="list-item">
+                <a href="{% url 'admin:School_cours_change' course.id %}">{{ course.titre }}</a>
+                <div style="font-size: 0.9em; color: #666;">
+                    Enseignant: {{ course.enseignant.get_full_name|default:course.enseignant.username }}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty-message">Aucun cours suivi</p>
+        {% endif %}
+    </div>
+
+    <div class="content-card">
+        <h3>Mes Derniers Résultats</h3>
+        {% if my_results %}
+            {% for result in my_results|slice:":5" %}
+            <div class="list-item">
+                <div>{{ result.quiz.titre }}</div>
+                <div style="font-size: 0.9em; color: #666;">
+                    Note: {{ result.score }}/20 - {{ result.date_soumission|date:"d/m/Y" }}
+                </div>
+            </div>
+            {% endfor %}
+            {% if my_results.count > 5 %}
+                <div class="list-item">
+                    <a href="{% url 'admin:School_resultatquiz_changelist' %}">Voir tous mes résultats</a>
+                </div>
+            {% endif %}
+        {% else %}
+            <p class="empty-message">Aucune évaluation passée</p>
+        {% endif %}
+    </div>
+
+    <div class="content-card">
+        <h3>Accès Rapide</h3>
+        <div class="list-item">
+            <a href="{% url 'admin:School_quiz_changelist' %}">Voir les évaluations disponibles</a>
+        </div>
+        <div class="list-item">
+            <a href="{% url 'admin:School_forum_changelist' %}">Accéder aux forums</a>
+        </div>
+        <div class="list-item">
+            <a href="{% url 'admin:School_emploidutemps_changelist' %}">Mon emploi du temps</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

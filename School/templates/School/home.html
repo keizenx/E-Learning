@@ -1,0 +1,95 @@
+{% extends "School/base.html" %}
+{% load static %}
+
+{% block title %}Accueil - École en Ligne{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">Bienvenue sur École en Ligne</h1>
+            <p class="lead mb-5">La plateforme d'apprentissage en ligne qui connecte les étudiants et les enseignants.</p>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Bonjour, {{ user.username }} ({{ user.get_role_display }})</h5>
+                        <p class="card-text">Accédez à votre tableau de bord pour gérer vos activités.</p>
+                        <a href="{% url 'School:dashboard' %}" class="btn btn-primary">Aller au tableau de bord</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Connectez-vous pour commencer</h5>
+                        <p class="card-text">Accédez à votre espace personnel pour suivre vos cours et interagir avec la communauté.</p>
+                        <a href="{% url 'School:login' %}" class="btn btn-primary">Se connecter</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Cours en ligne</h5>
+                    <p class="card-text">Accédez à une large variété de cours dans différentes matières.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Forums de discussion</h5>
+                    <p class="card-text">Échangez avec les autres étudiants et les enseignants.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Quiz et évaluations</h5>
+                    <p class="card-text">Testez vos connaissances et suivez votre progression.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        transition: transform 0.2s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .display-4 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    .lead {
+        color: #34495e;
+    }
+    .btn-primary {
+        background-color: #3498db;
+        border-color: #3498db;
+    }
+    .btn-primary:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+    }
+</style>
+{% endblock %} 

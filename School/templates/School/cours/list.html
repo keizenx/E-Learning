@@ -1,0 +1,75 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Liste des cours{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Liste des cours</h2>
+        </div>
+        {% if user.role == 'TEACHER' or user.role == 'ADMIN' %}
+        <div class="col-md-4 text-end">
+            <a href="{% url 'School:cours_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer un nouveau cours
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        {% for cours in cours %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ cours.titre }}</h5>
+                    <p class="card-text text-muted">
+                        <small>
+                            <i class="fas fa-user me-1"></i> {{ cours.enseignant.nom }}
+                            {% if cours.classe %}
+                            <br><i class="fas fa-graduation-cap me-1"></i> {{ cours.classe }}
+                            {% endif %}
+                        </small>
+                    </p>
+                    <p class="card-text">{{ cours.description|safe|truncatewords:30 }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'School:cours_detail' cours.id %}" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> Voir le cours
+                        </a>
+                        {% if user == cours.enseignant or user.role == 'ADMIN' %}
+                        <div class="btn-group">
+                            <a href="{% url 'School:cours_edit' cours.id %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'School:cours_delete' cours.id %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">
+                        <i class="fas fa-book me-1"></i> {{ cours.materiels.count }} matériels
+                        <i class="fas fa-question-circle ms-3 me-1"></i> {{ cours.quiz.count }} quiz
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                {% if user.role == 'TEACHER' %}
+                Vous n'avez pas encore créé de cours.
+                {% elif user.role == 'STUDENT' %}
+                Vous n'êtes inscrit à aucun cours.
+                {% else %}
+                Aucun cours n'est disponible.
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

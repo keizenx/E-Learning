@@ -1,18 +1,28 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
-from django.views.generic import View, ListView, DetailView, CreateView
+from django.views.generic import View, ListView, DetailView, CreateView, TemplateView, UpdateView, DeleteView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib import messages
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.db.models import Avg, Count
+from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
 from .models import (
     Cours, Materiel, Quiz, Question, Utilisateur,
-    Forum, Message, Discussion, ResultatQuiz
+    Forum, Message, Discussion, ResultatQuiz, Classe
 )
 from datetime import datetime, date
 from django.utils import timezone
 import json
+from django.contrib.auth.views import LogoutView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.conf import settings
+from django.http import HttpResponseRedirect
 
 class LoginView(View):
     template_name = 'School/login.html'
@@ -28,111 +38,203 @@ class LoginView(View):
         user = authenticate(username=username, password=password)
         
         if user is not None:
+            if user.role == 'TEACHER' and not user.is_approved:
+                return render(request, self.template_name, {
+                    'error': 'Votre compte est en attente d\'approbation par un administrateur.'
+                })
             login(request, user)
             return redirect('School:dashboard')
         return render(request, self.template_name, {'error': 'Identifiants invalides'})
 
+class RegisterView(View):
+    template_name = 'School/register.html'
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('School:dashboard')
+        return render(request, self.template_name)
+
+    def post(self, request):
+        try:
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            nom = request.POST.get('nom')
+            role = request.POST.get('role')
+
+            # Validation
+            if password1 != password2:
+                messages.error(request, 'Les mots de passe ne correspondent pas')
+                return render(request, self.template_name)
+
+            if Utilisateur.objects.filter(username=username).exists():
+                messages.error(request, 'Ce nom d\'utilisateur est déjà pris')
+                return render(request, self.template_name)
+
+            if Utilisateur.objects.filter(email=email).exists():
+                messages.error(request, 'Cette adresse email est déjà utilisée')
+                return render(request, self.template_name)
+
+            # Création de l'utilisateur
+            user = Utilisateur(
+                username=username,
+                email=email,
+                nom=nom,
+                role=role
+            )
+            user.set_password(password1)
+            user.save()
+
+            if role in ['TEACHER', 'ACADEMIC']:
+                # Envoyer un email aux administrateurs
+                admins = Utilisateur.objects.filter(role='ADMIN')
+                if admins.exists():
+                    admin_emails = [admin.email for admin in admins]
+                    
+                    subject = f'Nouvelle demande d\'inscription {user.get_role_display().lower()}'
+                    context = {
+                        'user': user,
+                        'role': user.get_role_display(),
+                        'approval_url': request.build_absolute_uri(
+                            reverse('School:approve_user', kwargs={'user_id': str(user.id)})
+                        )
+                    }
+                    message = render_to_string('School/email/user_approval_request.html', context)
+                    
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        admin_emails,
+                        fail_silently=True,
+                    )
+                    
+                    messages.success(request, 'Votre compte a été créé avec succès! Un administrateur doit approuver votre compte avant que vous puissiez vous connecter.')
+                    return redirect('School:login')
+                else:
+                    # Si aucun admin n'existe, approuver automatiquement
+                    user.is_approved = True
+                    user.save()
+                    messages.success(request, 'Votre compte a été créé et approuvé automatiquement car aucun administrateur n\'est disponible.')
+                    login(request, user)
+                    return redirect('School:dashboard')
+
+            # Connexion automatique pour les étudiants
+            login(request, user)
+            messages.success(request, 'Votre compte a été créé avec succès!')
+            return redirect('School:dashboard')
+
+        except Exception as e:
+            messages.error(request, f'Une erreur est survenue lors de la création du compte: {str(e)}')
+            return render(request, self.template_name)
+
 @method_decorator(login_required, name='dispatch')
-class DashboardView(View):
+class ApproveUserView(View):
+    def get(self, request, user_id):
+        if request.user.role != 'ADMIN':
+            messages.error(request, "Vous n'avez pas la permission d'approuver les utilisateurs.")
+            return redirect('School:dashboard')
+        
+        user = get_object_or_404(Utilisateur, id=user_id)
+        if user.role not in ['TEACHER', 'ACADEMIC']:
+            messages.error(request, "Ce type d'utilisateur ne nécessite pas d'approbation.")
+            return redirect('School:dashboard')
+
+        user.is_approved = True
+        user.save()
+        
+        # Envoyer un email à l'utilisateur
+        subject = 'Votre compte a été approuvé'
+        context = {
+            'user': user,
+            'role': user.get_role_display(),
+            'login_url': request.build_absolute_uri(reverse('School:login'))
+        }
+        message = render_to_string('School/email/user_approved.html', context)
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=True,
+        )
+        
+        messages.success(request, f"Le compte de {user.nom} ({user.get_role_display()}) a été approuvé avec succès.")
+        return redirect('School:dashboard')
+
+class CustomPasswordResetView(PasswordResetView):
+    template_name = 'School/password_reset.html'
+    email_template_name = 'School/password_reset_email.html'
+    success_url = reverse_lazy('School:login')
+
+    def form_valid(self, form):
+        email = form.cleaned_data['email']
+        if not Utilisateur.objects.filter(email=email).exists():
+            messages.error(self.request, 'Aucun compte n\'est associé à cette adresse email.')
+            return self.form_invalid(form)
+
+        user = Utilisateur.objects.get(email=email)
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_url = self.request.build_absolute_uri(
+            reverse('School:password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+        )
+
+        context = {
+            'user': user,
+            'reset_url': reset_url,
+            'site_name': 'École en Ligne'
+        }
+
+        send_mail(
+            'Réinitialisation de votre mot de passe - École en Ligne',
+            render_to_string(self.email_template_name, context),
+            'noreply@ecoleenligne.com',
+            [email],
+            fail_silently=False,
+        )
+
+        messages.success(self.request, 'Un email contenant les instructions de réinitialisation a été envoyé.')
+        return redirect(self.success_url)
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'School/password_reset_confirm.html'
+    success_url = reverse_lazy('School:login')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Votre mot de passe a été réinitialisé avec succès.')
+        return super().form_valid(form)
+
+class DashboardView(LoginRequiredMixin, View):
     template_name = 'School/dashboard.html'
 
     def get(self, request):
-        user = request.user
-        context = {
-            'user': user,
-            'role': user.role
-        }
-
-        # Statistiques communes
-        context['date_aujourdhui'] = date.today()
-
-        if user.role == 'STUDENT':
-            # Statistiques pour les étudiants
-            cours_inscrits = Cours.objects.filter(etudiants=user, is_active=True)
-            resultats_quiz = ResultatQuiz.objects.filter(etudiant=user)
-            
-            context.update({
-                'cours_inscrits': cours_inscrits.count(),
-                'quiz_a_faire': Quiz.objects.filter(cours__in=cours_inscrits).exclude(
-                    resultats__etudiant=user
-                ).count(),
-                'moyenne_generale': resultats_quiz.aggregate(
-                    avg=Avg('score')
-                )['avg'] or 0,
-            })
-
-        elif user.role == 'TEACHER':
-            # Statistiques pour les enseignants
-            context.update({
-                'total_cours': Cours.objects.filter(enseignant=user).count(),
-                'total_etudiants': Utilisateur.objects.filter(
-                    role='STUDENT',
-                    cours_suivis__enseignant=user
-                ).distinct().count(),
-                'total_quiz': Quiz.objects.filter(cours__enseignant=user).count(),
-            })
-
-        elif user.role in ['ADMIN', 'ACADEMIC']:
-            # Statistiques pour les administrateurs
-            context.update({
-                'total_etudiants': Utilisateur.objects.filter(role='STUDENT').count(),
-                'total_enseignants': Utilisateur.objects.filter(role='TEACHER').count(),
-                'total_cours': Cours.objects.all().count(),
-            })
-
-        # Activités récentes (pour tous les rôles)
-        activites = []
+        context = {}
         
-        # Nouveaux cours
-        nouveaux_cours = Cours.objects.filter(
-            is_active=True
-        ).order_by('-date_creation')[:3]
-        for cours in nouveaux_cours:
-            activites.append({
-                'type': 'cours',
-                'message': f'Nouveau cours disponible : "{cours.titre}"',
-                'date': cours.date_creation
-            })
-
-        # Quiz complétés (pour les étudiants)
-        if user.role == 'STUDENT':
-            quiz_completes = Quiz.objects.filter(
-                resultats__etudiant=user
-            ).order_by('-resultats__date_completion')[:3]
-            for quiz in quiz_completes:
-                activites.append({
-                    'type': 'quiz',
-                    'message': f'Quiz "{quiz.titre}" complété',
-                    'date': quiz.resultats.get(etudiant=user).date_completion
-                })
-
-        # Trier les activités par date
-        activites.sort(key=lambda x: x['date'], reverse=True)
-        context['activites'] = activites[:5]  # Garder les 5 plus récentes
-
-        # Emploi du temps
-        emploi_du_temps = [
-            {
-                'debut': '09:00',
-                'fin': '10:30',
-                'cours': 'Mathématiques',
-                'salle': 'Salle 101'
-            },
-            {
-                'debut': '11:00',
-                'fin': '12:30',
-                'cours': 'Physique',
-                'salle': 'Salle 203'
-            },
-            {
-                'debut': '14:00',
-                'fin': '15:30',
-                'cours': 'Informatique',
-                'salle': 'Salle Info 1'
-            }
-        ]
-        context['emploi_du_temps'] = emploi_du_temps
-
+        if request.user.role == 'ADMIN':
+            # Récupérer les enseignants en attente d'approbation
+            context['pending_teachers'] = Utilisateur.objects.filter(
+                role='TEACHER',
+                is_approved=False
+            ).order_by('-date_joined')
+            
+            # Statistiques générales
+            context['total_students'] = Utilisateur.objects.filter(role='STUDENT').count()
+            context['total_teachers'] = Utilisateur.objects.filter(role='TEACHER', is_approved=True).count()
+            context['total_courses'] = Cours.objects.count()
+            
+        elif request.user.role == 'TEACHER':
+            if not request.user.is_approved:
+                messages.warning(request, "Votre compte est en attente d'approbation par un administrateur.")
+            context['my_courses'] = Cours.objects.filter(enseignant=request.user)
+            context['total_students'] = sum(course.etudiants.count() for course in context['my_courses'])
+            
+        elif request.user.role == 'STUDENT':
+            context['enrolled_courses'] = Cours.objects.filter(etudiants=request.user)
+            context['available_courses'] = Cours.objects.exclude(etudiants=request.user).filter(is_active=True)
+        
         return render(request, self.template_name, context)
 
 @method_decorator(login_required, name='dispatch')
@@ -144,41 +246,147 @@ class CoursListView(ListView):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'STUDENT':
-            # Pour les étudiants, montrer seulement les cours actifs
-            return Cours.objects.filter(is_active=True)
+            return Cours.objects.filter(etudiants=user)
         elif user.role == 'TEACHER':
-            # Pour les enseignants, montrer leurs cours
             return Cours.objects.filter(enseignant=user)
+        return Cours.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Debug information
+        print(f"User role: {user.role}")
+        print(f"User ID: {user.id}")
+        print(f"User name: {user.nom}")
+        
+        if user.role == 'TEACHER':
+            # Récupérer les classes où l'utilisateur est enseignant
+            classes = user.classes_enseignees.all()
+            print(f"Teacher's classes count: {classes.count()}")
+            print("Classes assigned to teacher:")
+            for classe in classes:
+                print(f"- {classe.nom} (ID: {classe.id})")
+            context['classes'] = classes
+        elif user.role == 'ADMIN':
+            classes = Classe.objects.all()
+            print(f"Total classes in system: {classes.count()}")
+            print("All classes:")
+            for classe in classes:
+                print(f"- {classe.nom} (ID: {classe.id})")
+            context['classes'] = classes
         else:
-            # Pour les admins et responsables académiques, montrer tous les cours
-            return Cours.objects.all()
+            context['classes'] = []
+            print("User is a student, no classes to display")
+        
+        return context
 
 @method_decorator(login_required, name='dispatch')
 class CoursDetailView(DetailView):
     model = Cours
-    template_name = 'School/cours_detail.html'
+    template_name = 'School/cours/detail.html'
     context_object_name = 'cours'
 
-@method_decorator(login_required, name='dispatch')
-class CoursCreateView(View):
-    def post(self, request):
-        if request.user.role not in ['TEACHER', 'ADMIN']:
-            messages.error(request, "Vous n'avez pas la permission de créer un cours.")
-            return redirect('School:cours_list')
-
-        titre = request.POST.get('titre')
-        description = request.POST.get('description')
-        is_active = request.POST.get('is_active') == 'on'
-
-        cours = Cours.objects.create(
-            titre=titre,
-            description=description,
-            enseignant=request.user,
-            is_active=is_active
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['can_edit'] = (
+            self.request.user == self.object.enseignant or 
+            self.request.user.role == 'ADMIN'
         )
+        return context
 
-        messages.success(request, 'Cours créé avec succès!')
-        return redirect('School:cours_detail', pk=cours.id)
+@method_decorator(login_required, name='dispatch')
+class CoursUpdateView(UpdateView):
+    model = Cours
+    template_name = 'School/cours/edit.html'
+    fields = ['titre', 'description', 'classe']
+    
+    def get_success_url(self):
+        return reverse('School:cours_detail', kwargs={'pk': self.object.id})
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.request.user.role == 'TEACHER':
+            form.fields['classe'].queryset = self.request.user.classes_enseignees.all()
+        return form
+
+    def form_valid(self, form):
+        if self.request.user != self.object.enseignant and self.request.user.role != 'ADMIN':
+            messages.error(self.request, "Vous n'avez pas la permission de modifier ce cours.")
+            return redirect('School:cours_detail', pk=self.object.id)
+        messages.success(self.request, 'Cours modifié avec succès!')
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class CoursDeleteView(DeleteView):
+    model = Cours
+    template_name = 'School/cours/delete.html'
+    success_url = reverse_lazy('School:cours_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if request.user != self.object.enseignant and request.user.role != 'ADMIN':
+            messages.error(request, "Vous n'avez pas la permission de supprimer ce cours.")
+            return redirect('School:cours_detail', pk=self.object.id)
+        messages.success(request, 'Cours supprimé avec succès!')
+        return super().delete(request, *args, **kwargs)
+
+@method_decorator(login_required, name='dispatch')
+class CoursCreateView(CreateView):
+    model = Cours
+    template_name = 'School/cours/create.html'
+    fields = ['titre', 'description', 'classe', 'image', 'video_url', 'is_active']
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        user = self.request.user
+        
+        # Debug pour voir les classes disponibles
+        print(f"[DEBUG] User role: {user.role}")
+        print(f"[DEBUG] User ID: {user.id}")
+        print(f"[DEBUG] User name: {user.nom}")
+        
+        # Filtrer les classes en fonction du rôle de l'utilisateur
+        if user.role == 'TEACHER':
+            classes = user.classes_enseignees.all()
+            print(f"[DEBUG] Classes enseignées ({classes.count()}):")
+            for classe in classes:
+                print(f"[DEBUG] - {classe.nom} (ID: {classe.id})")
+            form.fields['classe'].queryset = classes
+        elif user.role == 'ADMIN':
+            classes = Classe.objects.all()
+            print(f"[DEBUG] Toutes les classes ({classes.count()}):")
+            for classe in classes:
+                print(f"[DEBUG] - {classe.nom} (ID: {classe.id})")
+            form.fields['classe'].queryset = classes
+        else:
+            form.fields['classe'].queryset = Classe.objects.none()
+            print("[DEBUG] Aucune classe disponible (rôle non autorisé)")
+        
+        return form
+
+    def form_valid(self, form):
+        form.instance.enseignant = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, 'Le cours a été créé avec succès!')
+        return response
+
+    def get_success_url(self):
+        return reverse('School:cours_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Ajouter les classes au contexte en fonction du rôle de l'utilisateur
+        if user.role == 'TEACHER':
+            context['classes'] = user.classes_enseignees.all()
+        elif user.role == 'ADMIN':
+            context['classes'] = Classe.objects.all()
+        else:
+            context['classes'] = []
+        
+        return context
 
 @method_decorator(login_required, name='dispatch')
 class MaterielCreateView(View):
@@ -191,11 +399,15 @@ class MaterielCreateView(View):
 
         materiel = Materiel.objects.create(
             titre=request.POST.get('titre'),
-            contenu=request.POST.get('contenu'),
+            description=request.POST.get('description', ''),
+            cours_principal=cours,
             type=request.POST.get('type'),
-            fichier=request.FILES.get('fichier')
+            contenu=request.POST.get('contenu', '')
         )
-        cours.materiels.add(materiel)
+
+        if 'fichier' in request.FILES:
+            materiel.fichier = request.FILES['fichier']
+            materiel.save()
 
         messages.success(request, 'Matériel ajouté avec succès!')
         return redirect('School:cours_detail', pk=cours_id)
@@ -209,23 +421,31 @@ class QuizCreateView(View):
             messages.error(request, "Vous n'avez pas la permission de créer un quiz pour ce cours.")
             return redirect('School:cours_detail', pk=cours_id)
 
-        # Créer le quiz
         quiz = Quiz.objects.create(
             titre=request.POST.get('titre'),
-            cours=cours
+            description=request.POST.get('description', ''),
+            cours=cours,
+            date_limite=request.POST.get('date_limite', timezone.now() + timezone.timedelta(days=7)),
+            duree=timezone.timedelta(minutes=int(request.POST.get('duree', 30)))
         )
 
         # Créer les questions
-        questions = request.POST.getlist('questions[]')
-        reponses = request.POST.getlist('reponses[]')
-        reponses_correctes = request.POST.getlist('reponse_correcte[]')
+        questions_data = zip(
+            request.POST.getlist('questions[]'),
+            request.POST.getlist('reponses[]'),
+            request.POST.getlist('reponse_correcte[]'),
+            request.POST.getlist('type[]'),
+            request.POST.getlist('points[]', [1] * len(request.POST.getlist('questions[]')))
+        )
 
-        for q, r, rc in zip(questions, reponses, reponses_correctes):
+        for texte, reponses, reponse_correcte, type_question, points in questions_data:
             Question.objects.create(
-                quiz=quiz,
-                texte=q,
-                reponses=json.dumps(r.split(',')),
-                reponse_correcte=rc
+                quiz_parent=quiz,
+                texte=texte,
+                reponses=reponses,
+                reponse_correcte=reponse_correcte,
+                type=type_question,
+                points=points
             )
 
         messages.success(request, 'Quiz créé avec succès!')
@@ -284,7 +504,11 @@ class ForumDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['messages'] = self.object.messages.all().order_by('-date_envoi')
+        messages = self.object.messages.all().order_by('-date_envoi')
+        context['messages'] = messages
+        # Calculer le nombre de participants uniques
+        participants = set(message.expediteur for message in messages)
+        context['participants_count'] = len(participants)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -299,13 +523,29 @@ class ForumDetailView(DetailView):
 class ForumCreateView(CreateView):
     model = Forum
     template_name = 'School/forum/create.html'
-    fields = ['titre']
+    fields = ['titre', 'description', 'cours']
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        user = self.request.user
+        if user.role == 'STUDENT':
+            # Les étudiants ne peuvent associer que les cours auxquels ils sont inscrits
+            form.fields['cours'].queryset = Cours.objects.filter(etudiants=user)
+        elif user.role == 'TEACHER':
+            # Les enseignants ne peuvent associer que leurs propres cours
+            form.fields['cours'].queryset = Cours.objects.filter(enseignant=user)
+        elif user.role == 'ADMIN':
+            # Les administrateurs peuvent voir tous les cours
+            form.fields['cours'].queryset = Cours.objects.all()
+        return form
 
     def form_valid(self, form):
-        forum = form.save(commit=False)
-        forum.save()
-        messages.success(self.request, 'Forum créé avec succès!')
-        return redirect('School:forum_detail', pk=forum.id)
+        form.instance.createur = self.request.user
+        messages.success(self.request, 'Le forum a été créé avec succès!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('School:forum_detail', kwargs={'pk': self.object.pk})
 
 @method_decorator(login_required, name='dispatch')
 class MessageReplyView(View):
@@ -367,4 +607,167 @@ class DiscussionCreateView(View):
             messages.success(request, 'Discussion créée avec succès!')
             return redirect('School:discussion_detail', pk=discussion.id)
         messages.error(request, 'Veuillez sélectionner au moins un participant.')
-        return redirect('School:discussion_list') 
+        return redirect('School:discussion_list')
+
+class CustomLogoutView(LogoutView):
+    next_page = reverse_lazy('School:login')
+    http_method_names = ['get', 'post']  # Allow both GET and POST methods
+
+class HomeView(TemplateView):
+    template_name = 'School/home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['role'] = self.request.user.role
+        return context 
+
+@method_decorator(login_required, name='dispatch')
+class MaterielUpdateView(UpdateView):
+    model = Materiel
+    template_name = 'School/materiel/edit.html'
+    fields = ['titre', 'description', 'type', 'contenu', 'fichier']
+
+    def get_success_url(self):
+        return reverse('School:cours_detail', kwargs={'pk': self.object.cours_principal.id})
+
+    def form_valid(self, form):
+        if self.request.user != self.object.cours_principal.enseignant and self.request.user.role != 'ADMIN':
+            messages.error(self.request, "Vous n'avez pas la permission de modifier ce matériel.")
+            return redirect('School:cours_detail', pk=self.object.cours_principal.id)
+        messages.success(self.request, 'Matériel modifié avec succès!')
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class MaterielDeleteView(DeleteView):
+    model = Materiel
+    template_name = 'School/materiel/delete.html'
+
+    def get_success_url(self):
+        return reverse('School:cours_detail', kwargs={'pk': self.object.cours_principal.id})
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if request.user != self.object.cours_principal.enseignant and request.user.role != 'ADMIN':
+            messages.error(request, "Vous n'avez pas la permission de supprimer ce matériel.")
+            return redirect('School:cours_detail', pk=self.object.cours_principal.id)
+        success_url = self.get_success_url()
+        self.object.delete()
+        messages.success(request, 'Matériel supprimé avec succès!')
+        return HttpResponseRedirect(success_url)
+
+@method_decorator(login_required, name='dispatch')
+class QuizUpdateView(UpdateView):
+    model = Quiz
+    template_name = 'School/quiz/edit.html'
+    fields = ['titre', 'description', 'date_limite', 'duree']
+
+    def get_success_url(self):
+        return reverse('School:cours_detail', kwargs={'pk': self.object.cours.id})
+
+    def form_valid(self, form):
+        if self.request.user != self.object.cours.enseignant and self.request.user.role != 'ADMIN':
+            messages.error(self.request, "Vous n'avez pas la permission de modifier ce quiz.")
+            return redirect('School:cours_detail', pk=self.object.cours.id)
+        messages.success(self.request, 'Quiz modifié avec succès!')
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class QuizDeleteView(DeleteView):
+    model = Quiz
+    template_name = 'School/quiz/delete.html'
+
+    def get_success_url(self):
+        return reverse('School:cours_detail', kwargs={'pk': self.object.cours.id})
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if request.user != self.object.cours.enseignant and request.user.role != 'ADMIN':
+            messages.error(request, "Vous n'avez pas la permission de supprimer ce quiz.")
+            return redirect('School:cours_detail', pk=self.object.cours.id)
+        success_url = self.get_success_url()
+        self.object.delete()
+        messages.success(request, 'Quiz supprimé avec succès!')
+        return HttpResponseRedirect(success_url)
+
+@method_decorator(login_required, name='dispatch')
+class ForumUpdateView(UpdateView):
+    model = Forum
+    template_name = 'School/forum/edit.html'
+    fields = ['titre', 'description', 'cours']
+
+    def get_success_url(self):
+        return reverse('School:forum_detail', kwargs={'pk': self.object.id})
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.request.user.role == 'TEACHER':
+            form.fields['cours'].queryset = Cours.objects.filter(enseignant=self.request.user)
+        return form
+
+    def form_valid(self, form):
+        if self.request.user.role not in ['TEACHER', 'ADMIN']:
+            messages.error(self.request, "Vous n'avez pas la permission de modifier ce forum.")
+            return redirect('School:forum_detail', pk=self.object.id)
+        messages.success(self.request, 'Forum modifié avec succès!')
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class ForumDeleteView(DeleteView):
+    model = Forum
+    template_name = 'School/forum/delete.html'
+    success_url = reverse_lazy('School:forum_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if request.user.role not in ['TEACHER', 'ADMIN']:
+            messages.error(request, "Vous n'avez pas la permission de supprimer ce forum.")
+            return redirect('School:forum_detail', pk=self.object.id)
+        messages.success(request, 'Forum supprimé avec succès!')
+        return super().delete(request, *args, **kwargs)
+
+@method_decorator(login_required, name='dispatch')
+class ProfileView(UpdateView):
+    model = Utilisateur
+    template_name = 'School/profile.html'
+    fields = ['nom', 'email']
+    success_url = reverse_lazy('School:profile')
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Profil mis à jour avec succès!')
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class TeacherClassesView(View):
+    template_name = 'School/teacher_classes.html'
+
+    def get(self, request):
+        if request.user.role != 'TEACHER':
+            messages.error(request, "Vous n'avez pas accès à cette page.")
+            return redirect('School:dashboard')
+
+        classes = request.user.classes_enseignees.all()
+        print(f"\nClasses de l'enseignant {request.user.nom}:")
+        for classe in classes:
+            print(f"- {classe.nom} (ID: {classe.id})")
+            print(f"  Enseignants de cette classe:")
+            for enseignant in classe.enseignants.all():
+                print(f"    * {enseignant.nom} (ID: {enseignant.id})")
+
+        context = {
+            'classes': classes
+        }
+        return render(request, self.template_name, context)
+
+class CoursInscriptionView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        cours = get_object_or_404(Cours, id=pk)
+        if request.user.role == 'STUDENT':
+            cours.etudiants.add(request.user)
+            messages.success(request, f'Vous êtes maintenant inscrit au cours "{cours.titre}"')
+        else:
+            messages.error(request, 'Seuls les étudiants peuvent s\'inscrire aux cours')
+        return redirect('School:dashboard') 

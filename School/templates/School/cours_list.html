@@ -24,9 +24,9 @@
     <div class="container">
         {% if user.role == 'ADMIN' or user.role == 'TEACHER' %}
         <div class="text-right mb-5">
-            <button class="btn btn-primary py-2 px-4" data-toggle="modal" data-target="#addCourseModal">
+            <a href="{% url 'School:cours_create' %}" class="btn btn-primary py-2 px-4">
                 <i class="fa fa-plus mr-2"></i>Ajouter un cours
-            </button>
+            </a>
         </div>
         {% endif %}
 
@@ -34,7 +34,11 @@
             {% for cours in cours_list %}
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="rounded overflow-hidden mb-2">
-                    <img class="img-fluid" src="{% static 'img/course-1.jpg' %}" alt="">
+                    {% if cours.image %}
+                        <img class="img-fluid" src="{{ cours.image.url }}" alt="{{ cours.titre }}">
+                    {% else %}
+                        <img class="img-fluid" src="{% static 'img/course-1.jpg' %}" alt="{{ cours.titre }}">
+                    {% endif %}
                     <div class="bg-secondary p-4">
                         <div class="d-flex justify-content-between mb-3">
                             <small class="m-0"><i class="fa fa-users text-primary mr-2"></i>{{ cours.etudiants.count }} Étudiants</small>
@@ -73,6 +77,8 @@
 
 <!-- Add Course Modal -->
 {% if user.role == 'ADMIN' or user.role == 'TEACHER' %}
+<!-- Debug: Affichage du rôle de l'utilisateur -->
+<!-- {{ user.role }} -->
 <div class="modal fade" id="addCourseModal" tabindex="-1" role="dialog" aria-labelledby="addCourseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -82,18 +88,41 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form method="post" action="{% url 'School:cours_create' %}">
+            <form method="post" action="{% url 'School:cours_create' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group">
+                    <!-- Debug: Nombre de classes disponibles -->
+                    <!-- {{ classes|length }} classes disponibles -->
+                    <div class="form-group mb-3">
                         <label for="titre">Titre du cours</label>
                         <input type="text" class="form-control" id="titre" name="titre" required>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="description">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
                     </div>
-                    <div class="form-check">
+                    <div class="form-group mb-3">
+                        <label for="classe">Classe</label>
+                        <select class="form-control" id="classe" name="classe" required>
+                            <option value="">Sélectionnez une classe</option>
+                            {% for classe in classes %}
+                            <!-- Debug: Affichage des détails de la classe -->
+                            <!-- ID: {{ classe.id }}, Nom: {{ classe.nom }} -->
+                            <option value="{{ classe.id }}">{{ classe.nom }} - Niveau {{ classe.niveau }} {% if classe.filiere %}({{ classe.filiere.nom }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="image">Image du cours</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        <small class="text-muted">Format recommandé : JPG, PNG (max 5MB)</small>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="video_url">URL de la vidéo de présentation (optionnel)</label>
+                        <input type="url" class="form-control" id="video_url" name="video_url" placeholder="https://www.youtube.com/embed/...">
+                        <small class="text-muted">Utilisez le lien d'intégration YouTube (embed)</small>
+                    </div>
+                    <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
                         <label class="form-check-label" for="is_active">Publier immédiatement</label>
                     </div>
@@ -145,5 +174,74 @@
 .form-control {
     border-radius: 0.25rem;
 }
+
+select.form-control {
+    height: calc(1.5em + 0.75rem + 2px);
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const description = document.getElementById('description');
+            const titre = document.getElementById('titre');
+            const classe = document.getElementById('classe');
+            const image = document.getElementById('image');
+
+            if (!titre.value.trim()) {
+                e.preventDefault();
+                alert('Veuillez saisir un titre pour le cours');
+                return;
+            }
+
+            if (!description.value.trim()) {
+                e.preventDefault();
+                alert('Veuillez saisir une description pour le cours');
+                return;
+            }
+
+            if (!classe.value) {
+                e.preventDefault();
+                alert('Veuillez sélectionner une classe');
+                return;
+            }
+
+            if (image.files.length > 0 && image.files[0].size > 5 * 1024 * 1024) {
+                e.preventDefault();
+                alert('L\'image ne doit pas dépasser 5MB');
+                return;
+            }
+        });
+    }
+
+    // Prévisualisation de l'image
+    const imageInput = document.getElementById('image');
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.createElement('img');
+                    preview.src = e.target.result;
+                    preview.style.maxWidth = '200px';
+                    preview.style.marginTop = '10px';
+                    const container = imageInput.parentElement;
+                    const existingPreview = container.querySelector('img');
+                    if (existingPreview) {
+                        container.removeChild(existingPreview);
+                    }
+                    container.appendChild(preview);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
 {% endblock %} 

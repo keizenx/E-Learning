@@ -1,0 +1,493 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}{{ cours.titre }} - École en Ligne{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-header {
+        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("{% static 'img/course-1.jpg' %}");
+        background-position: center;
+        background-size: cover;
+        color: white;
+        padding: 4rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .material-card {
+        transition: transform 0.2s;
+        height: 100%;
+    }
+
+    .material-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .material-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+    }
+
+    .pdf-icon { color: #e74c3c; }
+    .video-icon { color: #3498db; }
+    .doc-icon { color: #2ecc71; }
+
+    .quiz-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .quiz-card {
+        transition: transform 0.2s;
+    }
+
+    .quiz-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .student-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .action-buttons {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+
+    .video-container {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 */
+        height: 0;
+        overflow: hidden;
+    }
+
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Course Header -->
+<div class="course-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <h1 class="display-4">{{ cours.titre }}</h1>
+                <p class="lead">
+                    <i class="fas fa-user me-2"></i>{{ cours.enseignant.nom }}
+                    {% if cours.classe %}
+                    <span class="ms-3"><i class="fas fa-graduation-cap me-2"></i>{{ cours.classe }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            {% if user == cours.enseignant or user.role == 'ADMIN' %}
+            <div class="col-md-4 text-end">
+                <a href="{% url 'School:cours_edit' cours.id %}" class="btn btn-light me-2">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                <a href="{% url 'School:cours_delete' cours.id %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Description du cours</h5>
+                    <div class="course-description">
+                        {{ cours.description|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materials -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Matériels du cours</h5>
+                    {% if user == cours.enseignant or user.role == 'ADMIN' %}
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addMaterialModal">
+                        <i class="fas fa-plus"></i> Ajouter du matériel
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for materiel in cours.materiels.all %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card material-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        {% if materiel.type == 'PDF' %}
+                                        <i class="fas fa-file-pdf material-icon pdf-icon"></i>
+                                        {% elif materiel.type == 'VIDEO' %}
+                                        <i class="fas fa-video material-icon video-icon"></i>
+                                        {% else %}
+                                        <i class="fas fa-file material-icon doc-icon"></i>
+                                        {% endif %}
+                                        <h6 class="card-title mb-0">{{ materiel.titre }}</h6>
+                                    </div>
+                                    <p class="card-text small">{{ materiel.description|safe }}</p>
+                                    {% if materiel.type == 'VIDEO' and materiel.contenu %}
+                                    <div class="video-container mb-3">
+                                        <iframe src="{{ materiel.contenu }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                    </div>
+                                    {% endif %}
+                                    {% if materiel.fichier %}
+                                    <a href="{{ materiel.fichier.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="fas fa-download"></i> Télécharger
+                                    </a>
+                                    {% endif %}
+                                    {% if user == cours.enseignant or user.role == 'ADMIN' %}
+                                    <div class="mt-2">
+                                        <a href="{% url 'School:materiel_edit' materiel.id %}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'School:materiel_delete' materiel.id %}" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <p class="text-muted">Aucun matériel n'a encore été ajouté à ce cours.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quiz Section -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Quiz</h5>
+                    {% if user == cours.enseignant or user.role == 'ADMIN' %}
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addQuizModal">
+                        <i class="fas fa-plus"></i> Créer un quiz
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="quiz-list">
+                        {% for quiz in cours.quiz.all %}
+                        <div class="card quiz-card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ quiz.titre }}</h6>
+                                <p class="card-text small">
+                                    <i class="fas fa-clock me-1"></i> Durée : {{ quiz.duree }} minutes
+                                    <br>
+                                    <i class="fas fa-calendar me-1"></i> Date limite : {{ quiz.date_limite|date:"d/m/Y H:i" }}
+                                </p>
+                                <a href="{% url 'School:quiz_detail' quiz.id %}" class="btn btn-sm btn-outline-primary">
+                                    {% if user.role == 'STUDENT' %}Commencer{% else %}Voir{% endif %}
+                                </a>
+                                {% if user == cours.enseignant or user.role == 'ADMIN' %}
+                                <div class="mt-2">
+                                    <a href="{% url 'School:quiz_edit' quiz.id %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'School:quiz_delete' quiz.id %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">Aucun quiz n'a encore été créé pour ce cours.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students List -->
+            {% if user == cours.enseignant or user.role == 'ADMIN' %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Étudiants inscrits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="student-list">
+                        {% for etudiant in cours.etudiants.all %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="me-3">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    {{ etudiant.username|make_list|first|upper }}
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ etudiant.nom }}</h6>
+                                <small class="text-muted">{{ etudiant.email }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">Aucun étudiant inscrit à ce cours.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if user == cours.enseignant or user.role == 'ADMIN' %}
+<!-- Modal Ajout Matériel -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter du matériel</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'School:materiel_create' cours.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre</label>
+                        <input type="text" name="titre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="type" class="form-select" required id="materialType">
+                            <option value="PDF">Document PDF</option>
+                            <option value="VIDEO">Vidéo</option>
+                            <option value="AUTRE">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="fileUpload">
+                        <label class="form-label">Fichier</label>
+                        <input type="file" name="fichier" class="form-control">
+                    </div>
+                    <div class="mb-3" id="videoUrl" style="display: none;">
+                        <label class="form-label">URL de la vidéo</label>
+                        <input type="url" name="contenu" class="form-control" placeholder="https://www.youtube.com/embed/...">
+                        <small class="text-muted">Pour les vidéos YouTube, utilisez le lien d'intégration (clic droit sur la vidéo > Copier le code d'intégration)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajout Quiz -->
+<div class="modal fade" id="addQuizModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Créer un quiz</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'School:quiz_create' cours.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre du quiz</label>
+                        <input type="text" name="titre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Date limite</label>
+                                <input type="datetime-local" name="date_limite" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Durée (minutes)</label>
+                                <input type="number" name="duree" class="form-control" value="30" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="questions-container">
+                        <h6 class="mb-3">Questions</h6>
+                        <div class="question-item mb-4">
+                            <div class="mb-3">
+                                <label class="form-label">Question 1</label>
+                                <input type="text" name="questions[]" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Type de question</label>
+                                <select name="type[]" class="form-select question-type" required>
+                                    <option value="QCM">Choix multiple</option>
+                                    <option value="LIBRE">Réponse libre</option>
+                                    <option value="VF">Vrai/Faux</option>
+                                </select>
+                            </div>
+                            <div class="mb-3 reponses-container">
+                                <label class="form-label">Réponses (séparées par des points-virgules)</label>
+                                <input type="text" name="reponses[]" class="form-control" placeholder="Option 1;Option 2;Option 3" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Réponse correcte</label>
+                                <input type="text" name="reponse_correcte[]" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Points</label>
+                                <input type="number" name="points[]" class="form-control" value="1" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" id="add-question">
+                        <i class="fas fa-plus"></i> Ajouter une question
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer le quiz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/27.1.0/classic/ckeditor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation de CKEditor pour la description
+    ClassicEditor
+        .create(document.querySelector('textarea[name="description"]'))
+        .catch(error => {
+            console.error(error);
+        });
+
+    // Gestion du type de matériel
+    const materialType = document.getElementById('materialType');
+    const fileUpload = document.getElementById('fileUpload');
+    const videoUrl = document.getElementById('videoUrl');
+
+    if (materialType) {
+        materialType.addEventListener('change', function() {
+            if (this.value === 'VIDEO') {
+                fileUpload.style.display = 'none';
+                videoUrl.style.display = 'block';
+            } else {
+                fileUpload.style.display = 'block';
+                videoUrl.style.display = 'none';
+            }
+        });
+    }
+
+    // Gestion des questions du quiz
+    const addQuestionBtn = document.getElementById('add-question');
+    const questionsContainer = document.getElementById('questions-container');
+    let questionCount = 1;
+
+    if (addQuestionBtn) {
+        addQuestionBtn.addEventListener('click', function() {
+            questionCount++;
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item mb-4';
+            questionDiv.innerHTML = `
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Question ${questionCount}</label>
+                    <input type="text" name="questions[]" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Type de question</label>
+                    <select name="type[]" class="form-select question-type" required>
+                        <option value="QCM">Choix multiple</option>
+                        <option value="LIBRE">Réponse libre</option>
+                        <option value="VF">Vrai/Faux</option>
+                    </select>
+                </div>
+                <div class="mb-3 reponses-container">
+                    <label class="form-label">Réponses (séparées par des points-virgules)</label>
+                    <input type="text" name="reponses[]" class="form-control" placeholder="Option 1;Option 2;Option 3" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Réponse correcte</label>
+                    <input type="text" name="reponse_correcte[]" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Points</label>
+                    <input type="number" name="points[]" class="form-control" value="1" min="1" required>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-question">
+                    <i class="fas fa-trash"></i> Supprimer cette question
+                </button>
+            `;
+            questionsContainer.appendChild(questionDiv);
+
+            // Ajouter l'événement de suppression
+            const removeBtn = questionDiv.querySelector('.remove-question');
+            removeBtn.addEventListener('click', function() {
+                questionDiv.remove();
+            });
+
+            // Ajouter l'événement de changement de type
+            const typeSelect = questionDiv.querySelector('.question-type');
+            const reponsesContainer = questionDiv.querySelector('.reponses-container');
+            typeSelect.addEventListener('change', function() {
+                updateReponsesField(this, reponsesContainer);
+            });
+        });
+    }
+
+    // Fonction pour mettre à jour le champ des réponses en fonction du type
+    function updateReponsesField(select, container) {
+        const reponsesInput = container.querySelector('input');
+        if (select.value === 'VF') {
+            reponsesInput.value = 'Vrai;Faux';
+            reponsesInput.readOnly = true;
+        } else if (select.value === 'LIBRE') {
+            reponsesInput.value = '';
+            reponsesInput.readOnly = true;
+            reponsesInput.placeholder = 'Pas de réponses prédéfinies pour une question libre';
+        } else {
+            reponsesInput.readOnly = false;
+            reponsesInput.placeholder = 'Option 1;Option 2;Option 3';
+        }
+    }
+
+    // Ajouter l'événement de changement de type pour la première question
+    const firstTypeSelect = document.querySelector('.question-type');
+    if (firstTypeSelect) {
+        const firstReponsesContainer = firstTypeSelect.closest('.question-item').querySelector('.reponses-container');
+        firstTypeSelect.addEventListener('change', function() {
+            updateReponsesField(this, firstReponsesContainer);
+        });
+    }
+});
+</script>
+{% endblock %} 

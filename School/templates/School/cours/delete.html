@@ -1,0 +1,41 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Supprimer le cours {{ cours.titre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Confirmer la suppression</h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">Êtes-vous sûr de vouloir supprimer le cours "{{ cours.titre }}" ?</p>
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">Attention !</h5>
+                        <p class="mb-0">Cette action est irréversible. La suppression du cours entraînera également la suppression de :</p>
+                        <ul class="mb-0 mt-2">
+                            <li>Tous les matériels associés ({{ cours.materiels.count }} matériel(s))</li>
+                            <li>Tous les quiz associés ({{ cours.quiz.count }} quiz)</li>
+                            <li>Tous les forums associés</li>
+                        </ul>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Confirmer la suppression
+                            </button>
+                            <a href="{% url 'School:cours_detail' cours.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

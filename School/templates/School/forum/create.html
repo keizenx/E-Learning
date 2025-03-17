@@ -1,0 +1,91 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Créer un forum - École en Ligne{% endblock %}
+
+{% block content %}
+<!-- Header Start -->
+<div class="container-fluid page-header" style="margin-bottom: 90px;">
+    <div class="container">
+        <div class="d-flex flex-column justify-content-center" style="min-height: 300px">
+            <h3 class="display-4 text-white text-uppercase">Créer un forum</h3>
+            <div class="d-inline-flex text-white">
+                <p class="m-0 text-uppercase"><a class="text-white" href="{% url 'School:forum_list' %}">Forums</a></p>
+                <i class="fa fa-angle-double-right pt-1 px-3"></i>
+                <p class="m-0 text-uppercase">Créer</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Header End -->
+
+<!-- Create Forum Start -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Créer un nouveau forum</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="id_titre">Titre du forum</label>
+                            {{ form.titre.errors }}
+                            <input type="text" name="titre" id="id_titre" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_description">Description</label>
+                            {{ form.description.errors }}
+                            <textarea name="description" id="id_description" class="form-control" rows="4" required></textarea>
+                            <small class="text-muted">Une brève description du sujet du forum</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_cours">Cours associé</label>
+                            {{ form.cours.errors }}
+                            <select name="cours" id="id_cours" class="form-select">
+                                <option value="">---------</option>
+                                {% for cours in form.cours.field.queryset %}
+                                    <option value="{{ cours.id }}">{{ cours.titre }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Optionnel - Associer ce forum à un cours spécifique</small>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'School:forum_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Créer le forum
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Create Forum End -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'img/carousel-2.jpg' %}");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+</style>
+{% endblock %} 

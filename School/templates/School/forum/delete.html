@@ -1,0 +1,39 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Supprimer le forum {{ forum.titre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Confirmer la suppression</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">Attention !</h5>
+                        <p>Vous êtes sur le point de supprimer le forum "{{ forum.titre }}". Cette action est irréversible.</p>
+                    </div>
+                    
+                    <p>La suppression de ce forum entraînera également :</p>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">La suppression de toutes les discussions associées</li>
+                        <li class="list-group-item">La suppression de tous les messages dans ces discussions</li>
+                        <li class="list-group-item">La perte de l'historique des échanges entre les utilisateurs</li>
+                    </ul>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
+                            <a href="{% url 'School:forum_detail' forum.id %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

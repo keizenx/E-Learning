@@ -1,0 +1,89 @@
+{% extends 'School/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Mon Profil - École en Ligne{% endblock %}
+
+{% block content %}
+<!-- Header Start -->
+<div class="container-fluid page-header" style="margin-bottom: 90px;">
+    <div class="container">
+        <div class="d-flex flex-column justify-content-center" style="min-height: 300px">
+            <h3 class="display-4 text-white text-uppercase">Mon Profil</h3>
+            <div class="d-inline-flex text-white">
+                <p class="m-0 text-uppercase"><a class="text-white" href="{% url 'School:dashboard' %}">Tableau de bord</a></p>
+                <i class="fa fa-angle-double-right pt-1 px-3"></i>
+                <p class="m-0 text-uppercase">Profil</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Header End -->
+
+<!-- Profile Start -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Informations du profil</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Nom d'utilisateur</label>
+                            <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rôle</label>
+                            <input type="text" class="form-control" value="{{ user.get_role_display }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_nom">Nom complet</label>
+                            {{ form.nom.errors }}
+                            {{ form.nom|add_class:"form-control" }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="id_email">Email</label>
+                            {{ form.email.errors }}
+                            {{ form.email|add_class:"form-control" }}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Profile End -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'img/carousel-2.jpg' %}");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.form-control:read-only {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %} 

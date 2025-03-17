@@ -1,0 +1,80 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Modifier le matériel {{ materiel.titre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Modifier le matériel</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_titre" class="form-label">Titre</label>
+                            {{ form.titre.errors }}
+                            <input type="text" name="titre" id="id_titre" class="form-control" value="{{ materiel.titre }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            {{ form.description.errors }}
+                            <textarea name="description" id="id_description" class="form-control" rows="3" required>{{ materiel.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_type" class="form-label">Type</label>
+                            {{ form.type.errors }}
+                            <select name="type" id="id_type" class="form-select" required>
+                                {% for value, label in form.fields.type.choices %}
+                                <option value="{{ value }}" {% if value == materiel.type %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3" id="fileUpload" {% if materiel.type == 'VIDEO' %}style="display: none;"{% endif %}>
+                            <label for="id_fichier" class="form-label">Fichier</label>
+                            {{ form.fichier.errors }}
+                            <input type="file" name="fichier" id="id_fichier" class="form-control">
+                            {% if materiel.fichier %}
+                            <small class="text-muted">Fichier actuel : {{ materiel.fichier.name }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3" id="videoUrl" {% if materiel.type != 'VIDEO' %}style="display: none;"{% endif %}>
+                            <label for="id_contenu" class="form-label">URL de la vidéo</label>
+                            {{ form.contenu.errors }}
+                            <input type="url" name="contenu" id="id_contenu" class="form-control" value="{{ materiel.contenu }}" placeholder="https://www.youtube.com/embed/...">
+                            <small class="text-muted">Pour les vidéos YouTube, utilisez le lien d'intégration</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                            <a href="{% url 'School:cours_detail' materiel.cours_principal.id %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('id_type');
+    const fileUpload = document.getElementById('fileUpload');
+    const videoUrl = document.getElementById('videoUrl');
+
+    typeSelect.addEventListener('change', function() {
+        if (this.value === 'VIDEO') {
+            fileUpload.style.display = 'none';
+            videoUrl.style.display = 'block';
+        } else {
+            fileUpload.style.display = 'block';
+            videoUrl.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

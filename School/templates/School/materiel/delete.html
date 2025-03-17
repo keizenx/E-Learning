@@ -1,0 +1,39 @@
+{% extends 'School/base.html' %}
+{% load static %}
+
+{% block title %}Supprimer le matériel {{ materiel.titre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Confirmer la suppression</h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">Êtes-vous sûr de vouloir supprimer le matériel "{{ materiel.titre }}" ?</p>
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">Attention !</h5>
+                        <p class="mb-0">Cette action est irréversible. Une fois supprimé, ce matériel ne pourra pas être récupéré.</p>
+                        {% if materiel.fichier %}
+                        <p class="mt-2 mb-0">Le fichier associé sera également supprimé : {{ materiel.fichier.name }}</p>
+                        {% endif %}
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Confirmer la suppression
+                            </button>
+                            <a href="{% url 'School:cours_detail' materiel.cours_principal.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

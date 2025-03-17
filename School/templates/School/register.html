@@ -1,0 +1,144 @@
+{% extends "School/base.html" %}
+{% load static %}
+
+{% block title %}Inscription - École en Ligne{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    .btn-register {
+        width: 100%;
+        padding: 0.8rem;
+        font-size: 1.1rem;
+    }
+    .role-info {
+        display: none;
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+    .role-info.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="register-container">
+        <h2 class="text-center mb-4">Inscription</h2>
+        
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="nom">Nom complet</label>
+                <input type="text" class="form-control" id="nom" name="nom" required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Rôle</label>
+                <select class="form-control" id="role" name="role" required onchange="showRoleInfo(this.value)">
+                    <option value="">Sélectionnez un rôle</option>
+                    <option value="STUDENT">Étudiant</option>
+                    <option value="TEACHER">Enseignant</option>
+                    <option value="ACADEMIC">Responsable académique</option>
+                </select>
+            </div>
+
+            <div id="teacherInfo" class="role-info">
+                <p class="text-info">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    En tant qu'enseignant, votre compte devra être approuvé par un administrateur avant de pouvoir vous connecter.
+                </p>
+            </div>
+
+            <div id="academicInfo" class="role-info">
+                <p class="text-info">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    En tant que responsable académique, votre compte devra être approuvé par un administrateur avant de pouvoir vous connecter.
+                </p>
+            </div>
+
+            <div id="studentInfo" class="role-info">
+                <p class="text-info">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    En tant qu'étudiant, vous pourrez accéder immédiatement à la plateforme après votre inscription.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="password1">Mot de passe</label>
+                <input type="password" class="form-control" id="password1" name="password1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password2">Confirmer le mot de passe</label>
+                <input type="password" class="form-control" id="password2" name="password2" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-register">S'inscrire</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <p>Déjà inscrit ? <a href="{% url 'School:login' %}">Connectez-vous</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showRoleInfo(role) {
+    // Cacher toutes les infos
+    document.querySelectorAll('.role-info').forEach(info => {
+        info.classList.remove('active');
+    });
+
+    // Afficher l'info correspondante au rôle sélectionné
+    if (role === 'TEACHER') {
+        document.getElementById('teacherInfo').classList.add('active');
+    } else if (role === 'ACADEMIC') {
+        document.getElementById('academicInfo').classList.add('active');
+    } else if (role === 'STUDENT') {
+        document.getElementById('studentInfo').classList.add('active');
+    }
+}
+</script>
+{% endblock %} 
