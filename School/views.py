@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.urls import reverse
+from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Avg, Count
 from .models import (
     Cours, Materiel, Quiz, Question, Utilisateur,
@@ -368,3 +369,18 @@ class DiscussionCreateView(View):
             return redirect('School:discussion_detail', pk=discussion.id)
         messages.error(request, 'Veuillez sélectionner au moins un participant.')
         return redirect('School:discussion_list') 
+    
+    
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # Connecte l'utilisateur après inscription
+            messages.success(request, "Inscription réussie ! Bienvenue.")
+            return redirect('School:dashboard')  # Redirige vers le tableau de bord
+        else:
+            messages.error(request, "Erreur dans le formulaire. Vérifiez vos informations.")
+    else:
+        form = UserCreationForm()
+    return render(request, 'School/register.html', {'form': form})

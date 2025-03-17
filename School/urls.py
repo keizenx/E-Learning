@@ -1,4 +1,6 @@
+from django import views
 from django.urls import path
+
 from django.contrib.auth.views import LogoutView
 from .views import (
     LoginView, DashboardView, 
@@ -8,12 +10,14 @@ from .views import (
     MessageReplyView, DiscussionListView, DiscussionDetailView,
     DiscussionCreateView
 )
+from . import views
 
 app_name = 'School'
 
 urlpatterns = [
     path('', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(next_page='School:login'), name='logout'),
+    path('register/', views.register, name='register'),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     
     # Cours
